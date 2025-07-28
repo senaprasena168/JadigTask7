@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  email      String    @unique(map: "users_email_unique") @db.VarChar(255)
+  password   String    @db.VarChar(255)
+  isVerified Boolean?  @default(false) @map("is_verified")
+  otp        String?   @db.VarChar(6)
+  otpExpiry  DateTime? @map("otp_expiry") @db.Timestamp(6)
+  role       String    @default("admin") @db.VarChar(50)
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("users")
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  price       Decimal   @db.Decimal(10, 2)
+  description String?
+  
+  // R2 Cloudflare image fields
+  imageUrl    String?   @map("image_url") @db.VarChar(500)
+  imageKey    String?   @map("image_key") @db.VarChar(500) // R2 object key for deletion
+  imageType   String?   @map("image_type") @db.VarChar(50)
+  
+  // Legacy fields - keep for backward compatibility during migration
+  image       String?   @db.VarChar(500)
+  imageData   String?   @map("image_data")
+  
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("products")
+}
