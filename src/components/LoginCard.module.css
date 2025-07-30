@@ -1,0 +1,393 @@
+/* Note: The `body` and `*` styles from your original global.css should be moved to src/app/globals.css */
+
+.container {
+  position: relative;
+}
+
+.box {
+  position: relative;
+  width: 300px;
+  height: 80px;
+  background: transparent;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: height 0.5s ease, width 0.5s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Add a .hovered class for JS-driven hover state */
+.box.hovered, /* Use this class when JS triggers the hover state */
+.box:hover {
+  /* Keep :hover for pure CSS hover */
+  width: 380px;
+  height: 550px;
+}
+
+.box::before {
+  display: none;
+}
+
+.box::after {
+  display: none;
+}
+
+@keyframes rotating {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+@keyframes rotating-tilted {
+  0% {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-270deg);
+  }
+}
+
+@keyframes rotating-perpendicular {
+  0% {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-270deg);
+  }
+}
+
+.gradientContainer {
+  /* Renamed from .gradient-container */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 630px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+  transition: width 0.5s ease;
+  animation: rotating-perpendicular 4s linear infinite;
+  animation-delay: -1s;
+}
+
+.box.hovered .gradientContainer, /* Added .hovered */
+.box:hover .gradientContainer {
+  width: 190px;
+}
+
+.gradientBox {
+  /* Renamed from .gradient-box */
+  width: 100%;
+  height: 50%;
+  border-radius: 0;
+}
+
+.gradientBox1 {
+  /* Renamed from .gradient-box-1 */
+  position: relative;
+  background: linear-gradient(
+    to right,
+    rgb(0, 150, 255) 0%,
+    rgb(50, 50, 50) 100%
+  );
+}
+
+.gradientBox1::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(0, 150, 255, 0.6));
+  z-index: -1;
+}
+
+.gradientBox2 {
+  /* Renamed from .gradient-box-2 */
+  position: relative;
+  background: linear-gradient(
+    to left,
+    rgb(0, 150, 255) 0%,
+    rgb(50, 50, 50) 100%
+  );
+}
+
+.gradientBox2::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(0, 150, 255, 0.6));
+  z-index: -1;
+}
+
+.redGradientContainer {
+  /* Renamed from .red-gradient-container */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 630px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+  transition: width 0.5s ease;
+  animation: rotating 4s linear infinite;
+  animation-delay: -1s;
+}
+
+.box.hovered .redGradientContainer, /* Added .hovered */
+.box:hover .redGradientContainer {
+  width: 190px;
+}
+
+.redGradientBox {
+  /* Renamed from .red-gradient-box */
+  width: 100%;
+  height: 50%;
+  border-radius: 0;
+}
+
+.redGradientBox1 {
+  /* Renamed from .red-gradient-box-1 */
+  position: relative;
+  background: linear-gradient(
+    to right,
+    rgb(255, 50, 150) 0%,
+    rgb(80, 20, 20) 100%
+  );
+}
+
+.redGradientBox1::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(255, 50, 150, 0.6));
+  z-index: -1;
+}
+
+.redGradientBox2 {
+  /* Renamed from .red-gradient-box-2 */
+  position: relative;
+  background: linear-gradient(
+    to left,
+    rgb(255, 50, 150) 0%,
+    rgb(80, 20, 20) 100%
+  );
+}
+
+.redGradientBox2::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(255, 50, 150, 0.6));
+  z-index: -1;
+}
+
+.form {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.form::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: rgb(58, 56, 56);
+  border-radius: 15px;
+  border: 8px solid #25252b;
+  z-index: -1;
+}
+
+.form h2 {
+  color: #fff;
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-align: center;
+  transition: transform 0.5s ease;
+}
+
+.box:not(.hovered) h2 {
+  /* Changed from :hover to .hovered for consistency */
+  transform: scale(1.2);
+}
+
+.inputContainer {
+  /* Renamed from .input-container */
+  width: 100%;
+  overflow: hidden;
+  height: 0;
+  opacity: 0;
+  transition: height 0.5s ease, opacity 0.5s ease;
+}
+
+.box.hovered .inputContainer, /* Added .hovered */
+.box:hover .inputContainer {
+  height: 450px;
+  opacity: 1;
+  margin-top: 20px;
+}
+
+.inputBox {
+  /* Renamed from .input-box */
+  position: relative;
+  width: 100%;
+  margin-top: 35px;
+}
+
+.inputBox input {
+  position: relative;
+  width: 100%;
+  padding: 20px 10px 10px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 1em;
+  letter-spacing: 0.05em;
+  z-index: 10;
+  border-bottom: 1px solid #8f8f8f;
+}
+
+.inputBox span {
+  position: absolute;
+  left: 0;
+  padding: 20px 0px 10px;
+  font-size: 1em;
+  color: #8f8f8f;
+  pointer-events: none;
+  letter-spacing: 0.05em;
+  transition: 0.5s;
+}
+
+.inputBox input:valid ~ span,
+.inputBox input:focus ~ span {
+  color: #00ccff;
+  transform: translateY(-34px);
+  font-size: 0.75em;
+}
+
+.inputBox input:valid,
+.inputBox input:focus {
+  border-bottom: 2px solid #00ccff;
+}
+
+.links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.links a {
+  margin: 10px 0;
+  font-size: 0.85em;
+  text-decoration: none;
+}
+
+.forgot {
+  color: #8f8f8f;
+}
+
+.signup {
+  color: #ff0080;
+}
+
+.button {
+  /* Added .button class as the HTML button tag in React component uses it */
+  border: none;
+  outline: none;
+  background: #00ccff;
+  padding: 11px 25px;
+  width: 100%;
+  margin-top: 30px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #1c1c25;
+  font-size: 1em;
+  transition: 0.3s;
+}
+
+.button:hover {
+  background: #00a6ff;
+  transform: translateY(-2px);
+}
+
+.button:disabled {
+  background: #8a8a8a;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.inputBox.shake {
+  /* Renamed from .input-box.shake */
+  animation: shake 0.5s ease;
+}
+
+.message {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0, 204, 255, 0.9);
+  color: #1c1c25;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.message.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

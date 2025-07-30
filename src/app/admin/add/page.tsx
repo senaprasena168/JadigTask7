@@ -94,8 +94,8 @@ function AddProductPageContent() {
       await dispatch(addProduct({
         ...formData,
         image: imageUrl,
-        imageId: imageId,
-        price: parseFloat(formData.price)
+        imageKey: imageId,
+        price: formData.price
       })).unwrap();
       
       router.push('/admin');
