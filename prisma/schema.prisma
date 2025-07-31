@@ -8,18 +8,61 @@ datasource db {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  name       String    @db.VarChar(255)
-  email      String    @unique(map: "users_email_unique") @db.VarChar(255)
-  password   String    @db.VarChar(255)
-  isVerified Boolean?  @default(false) @map("is_verified")
-  otp        String?   @db.VarChar(6)
-  otpExpiry  DateTime? @map("otp_expiry") @db.Timestamp(6)
-  role       String    @default("admin") @db.VarChar(50)
-  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt  DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  image         String?
+  password      String?
+  provider      String?   @default("email")
+  isAdmin       Boolean   @default(false)
+  isVerified    Boolean   @default(true)
+  otpCode       String?
+  otpExpiry     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
 
   @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
 }
 
 model Product {
@@ -27,16 +70,11 @@ model Product {
   name        String    @db.VarChar(255)
   price       Decimal   @db.Decimal(10, 2)
   description String?
-  
-  // R2 Cloudflare image fields
   imageUrl    String?   @map("image_url") @db.VarChar(500)
-  imageKey    String?   @map("image_key") @db.VarChar(500) // R2 object key for deletion
+  imageKey    String?   @map("image_key") @db.VarChar(500)
   imageType   String?   @map("image_type") @db.VarChar(50)
-  
-  // Legacy fields - keep for backward compatibility during migration
   image       String?   @db.VarChar(500)
   imageData   String?   @map("image_data")
-  
   createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 

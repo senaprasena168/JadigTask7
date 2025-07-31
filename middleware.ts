@@ -1,67 +1,110 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { auth } from './auth'
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { auth } from './auth';
 
 export async function middleware(request: NextRequest) {
-  console.log('🔥 Middleware triggered for:', request.nextUrl.pathname)
-  
-  // Skip middleware for NextAuth API routes to prevent conflicts
-  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
-    console.log('🔄 Skipping middleware for NextAuth API route')
-    return NextResponse.next()
+  const pathname = request.nextUrl.pathname;
+
+  console.log('🔥 Middleware triggered for:', pathname);
+
+  // Skip middleware for static files and most API routes, but handle OAuth routes
+  if (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/favicon') ||
+    (pathname.includes('.') && !pathname.startsWith('/api/auth/'))
+  ) {
+    return NextResponse.next();
   }
-  
-  // Check if the request is for an admin route
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    console.log('🔒 Admin route detected, checking authentication...')
-    
-    try {
-      // First check NextAuth.js session
-      const session = await auth()
-      console.log('🔐 NextAuth session:', !!session, session?.user?.email)
-      
-      if (session?.user) {
-        console.log('✅ NextAuth user authenticated, allowing access')
-        return NextResponse.next()
-      }
-    } catch (error) {
-      console.warn('⚠️ NextAuth session check failed:', error)
-    }
-    
-    // Fallback: Check custom auth cookie for email/password login
-    const authCookie = request.cookies.get('auth')
-    console.log('🍪 Custom auth cookie exists:', !!authCookie)
-    
-    if (authCookie) {
-      try {
-        // Parse the auth cookie to verify authentication
-        const authData = JSON.parse(authCookie.value)
-        console.log('📋 Custom auth data:', { isAuthenticated: authData.isAuthenticated, role: authData.user?.role })
-        
-        // Check if user is authenticated and has admin role
-        if (authData.isAuthenticated && authData.user?.role === 'admin') {
-          console.log('✅ Custom auth user authenticated as admin, allowing access')
-          return NextResponse.next()
-        }
-      } catch (error) {
-        console.warn('💥 Invalid custom auth cookie:', error)
-        // Clear invalid cookie
-        const response = NextResponse.redirect(new URL('/login', request.url))
-        response.cookies.delete('auth')
-        return response
-      }
-    }
-    
-    // No valid authentication found, redirect to login
-    console.log('❌ No valid authentication found, redirecting to login')
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(loginUrl)
+
+  // Get session using NextAuth
+  let session = null;
+  try {
+    session = await auth();
+    console.log('🔐 NextAuth session:', !!session, session?.user?.email);
+  } catch (error) {
+    console.warn('⚠️ NextAuth session check failed:', error);
   }
-  
-  return NextResponse.next()
+
+  const isAuthenticated = !!session?.user;
+
+  // Handle OAuth routes - prevent authenticated users from accessing OAuth flows
+  if (pathname.startsWith('/api/auth/signin') || pathname.startsWith('/api/auth/callback')) {
+    if (isAuthenticated) {
+      console.log('🚫 Authenticated user trying to access OAuth flow, redirecting to admin');
+      const response = NextResponse.redirect(new URL('/admin', request.url));
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
+    }
+    // Allow unauthenticated users to access OAuth flows
+    return NextResponse.next();
+  }
+
+  // Handle other NextAuth API routes (session, csrf, etc.) - allow these
+  if (pathname.startsWith('/api/auth/')) {
+    return NextResponse.next();
+  }
+
+  // Handle login page access
+  if (pathname === '/login') {
+    if (isAuthenticated) {
+      console.log('🔄 Authenticated user accessing login page, redirecting');
+      const redirect = request.nextUrl.searchParams.get('redirect') || '/admin';
+      const response = NextResponse.redirect(new URL(redirect, request.url));
+      // Add headers to prevent caching and force replace
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
+    }
+    // Allow unauthenticated users to access login page
+    return NextResponse.next();
+  }
+
+  // Handle admin routes
+  if (pathname.startsWith('/admin')) {
+    console.log('🔒 Admin route detected, checking authentication...');
+
+    if (isAuthenticated) {
+      console.log('✅ User authenticated, allowing access to admin');
+      return NextResponse.next();
+    }
+
+    // Not authenticated, redirect to login
+    console.log('❌ No authentication found, redirecting to login');
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    const response = NextResponse.redirect(loginUrl);
+    // Add headers to prevent caching and force replace
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
+  }
+
+  // Handle root path
+  if (pathname === '/') {
+    if (isAuthenticated) {
+      // Redirect authenticated users to admin (or dashboard when you create it)
+      console.log('🏠 Authenticated user on home, redirecting to admin');
+      const response = NextResponse.redirect(new URL('/admin', request.url));
+      // Add headers to prevent caching and force replace
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
+    }
+    // Allow unauthenticated users to see home page
+    return NextResponse.next();
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: '/admin/:path*'
-}
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
+};

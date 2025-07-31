@@ -4,37 +4,30 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { logout, loginSuccess } from '@/lib/features/auth/authSlice';
 import clsx from 'clsx';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { data: session } = useSession();
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
-
-  // Backdoor login function
-  const handleBackdoorLogin = async () => {
-    if (!isAuthenticated) {
-      // Direct login without going through login page
-      dispatch(loginSuccess({
-        username: 'Admin Cat',
-        email: 'admin@catfoodstore.com',
-        role: 'admin'
-      }));
-      router.push('/admin');
-    }
-  };
+  const { data: session, status } = useSession();
 
   const handleLogout = async () => {
-    if (session) {
-      await signOut({ redirect: false });
+    try {
+      await signOut({
+        redirect: false,
+        callbackUrl: '/'
+      });
+      // Use window.location.replace to prevent back button issues
+      window.location.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback redirect
+      window.location.replace('/');
     }
-    dispatch(logout());
-    router.push('/');
   };
+
+  // Check if user is authenticated
+  const isAuthenticated = status === 'authenticated' && session?.user;
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -42,7 +35,7 @@ export default function Navbar() {
     { href: '/profile', label: 'Profile' },
     { href: '/products', label: 'Products' },
     { href: '/admin', label: 'Admin' }, // Always show Admin menu
-    ...(!isAuthenticated && !session ? [{ href: '/login', label: 'Login' }] : []),
+    ...(!isAuthenticated ? [{ href: '/login', label: 'Login' }] : []),
   ];
 
   return (
@@ -50,12 +43,8 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
-            {/* Profile picture as backdoor login button */}
-            <button
-              onClick={handleBackdoorLogin}
-              className="w-10 h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-blue-200 transition-all duration-200 transform hover:scale-105"
-              title={isAuthenticated ? "Already logged in" : "Click for quick admin access"}
-            >
+            {/* Profile picture */}
+            <div className="w-10 h-10 rounded-full overflow-hidden">
               <Image
                 src="/profile-cat.png"
                 alt="Profile Cat"
@@ -63,7 +52,7 @@ export default function Navbar() {
                 height={40}
                 className="w-full h-full object-cover"
               />
-            </button>
+            </div>
             
             <Link
               href="/"
@@ -95,8 +84,8 @@ export default function Navbar() {
           {isAuthenticated && (
             <div className="hidden md:flex items-center space-x-4">
               <div className="text-sm text-blue-200 text-right">
-                <div className="font-medium">{user?.username}</div>
-                <div className="text-xs opacity-80">{user?.email}</div>
+                <div className="font-medium">{session.user.name || session.user.email}</div>
+                <div className="text-xs opacity-80">{session.user.email}</div>
               </div>
               <button
                 onClick={handleLogout}

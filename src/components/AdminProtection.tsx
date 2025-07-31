@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useAppSelector, useAppDispatch } from '@/lib/hooks';
-import { loginSuccess, initializeAuth } from '@/lib/features/auth/authSlice';
 
 interface AdminProtectionProps {
   children: React.ReactNode;
@@ -12,56 +10,22 @@ interface AdminProtectionProps {
 
 export default function AdminProtection({ children }: AdminProtectionProps) {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { data: session, status: sessionStatus } = useSession();
-  const { isAuthenticated, user, loading } = useAppSelector((state) => state.auth);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Initialize Redux auth state on component mount
-  useEffect(() => {
-    dispatch(initializeAuth());
-    setIsInitialized(true);
-  }, [dispatch]);
-
-  // Sync NextAuth session with Redux store
-  useEffect(() => {
-    if (sessionStatus === 'loading' || !isInitialized) return;
-
-    if (session?.user && sessionStatus === 'authenticated') {
-      // User is authenticated via NextAuth, sync with Redux
-      dispatch(
-        loginSuccess({
-          username: session.user.name || session.user.email || 'User',
-          email: session.user.email || '',
-          role: (session.user as { role?: string }).role || 'admin',
-        })
-      );
-    }
-  }, [session, sessionStatus, dispatch, isInitialized]);
+  const { data: session, status } = useSession();
 
   // Handle authentication check and redirect
   useEffect(() => {
-    if (sessionStatus === 'loading' || !isInitialized) return;
+    if (status === 'loading') return; // Still loading session
 
-    // Check NextAuth session first
-    if (session?.user && sessionStatus === 'authenticated') {
-      // User is authenticated via NextAuth, allow access
-      return;
+    // Check NextAuth session
+    if (!session?.user) {
+      // No valid authentication found, redirect to login
+      console.log('🔒 No valid authentication found, redirecting to login');
+      router.push('/login?redirect=/admin');
     }
-
-    // Check Redux auth state for manual login
-    if (isAuthenticated && user) {
-      // User is authenticated via manual login, allow access
-      return;
-    }
-
-    // No valid authentication found, redirect to login
-    console.log('🔒 No valid authentication found, redirecting to login');
-    router.push('/login?redirect=/admin');
-  }, [session, sessionStatus, isAuthenticated, user, router, isInitialized]);
+  }, [session, status, router]);
 
   // Show loading while checking authentication
-  if (sessionStatus === 'loading' || !isInitialized || loading) {
+  if (status === 'loading') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center h-64">
@@ -71,12 +35,8 @@ export default function AdminProtection({ children }: AdminProtectionProps) {
     );
   }
 
-  // Check if user is authenticated (either via NextAuth or manual login)
-  const isUserAuthenticated =
-    (session?.user && sessionStatus === 'authenticated') ||
-    (isAuthenticated && user);
-
-  if (!isUserAuthenticated) {
+  // Check if user is authenticated via NextAuth
+  if (!session?.user) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">

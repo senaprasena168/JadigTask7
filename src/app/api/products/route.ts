@@ -3,22 +3,22 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Get all products with clean data structure
-    const products = await prisma.product.findMany({
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        description: true,
-        imageUrl: true,
-        imageType: true,
-        createdAt: true,
-        updatedAt: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    // Use raw SQL to get all products with actual database structure
+    const products = await prisma.$queryRaw<Array<{
+      id: number;
+      name: string;
+      price: number;
+      description: string | null;
+      imageUrl: string | null;
+      category: string | null;
+      inStock: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    }>>`
+      SELECT id, name, price, description, "imageUrl", category, "inStock", "createdAt", "updatedAt"
+      FROM products
+      ORDER BY "createdAt" DESC
+    `;
     
     return NextResponse.json({
       success: true,
@@ -56,31 +56,38 @@ export async function POST(request: NextRequest) {
     let newProduct;
     
     if (imageId) {
-      // Update existing product record (created during image upload)
-      newProduct = await prisma.product.update({
-        where: { id: parseInt(imageId) },
-        data: {
-          name,
-          price: parseFloat(price),
-          description: description || null,
-          imageUrl: finalImageUrl || null,
-          imageKey: imageKey || null,
-          imageType: imageType || null,
-          updatedAt: new Date()
-        }
-      });
+      // Update existing product record using raw SQL
+      const result = await prisma.$queryRaw<Array<{
+        id: number;
+        name: string;
+        price: number;
+        description: string | null;
+        imageUrl: string | null;
+      }>>`
+        UPDATE products
+        SET name = ${name},
+            price = ${parseFloat(price)},
+            description = ${description || null},
+            "imageUrl" = ${finalImageUrl || null},
+            "updatedAt" = NOW()
+        WHERE id = ${parseInt(imageId)}
+        RETURNING id, name, price, description, "imageUrl"
+      `;
+      newProduct = result[0];
     } else {
-      // Create new product
-      newProduct = await prisma.product.create({
-        data: {
-          name,
-          price: parseFloat(price),
-          description: description || null,
-          imageUrl: finalImageUrl || null,
-          imageKey: imageKey || null,
-          imageType: imageType || null
-        }
-      });
+      // Create new product using raw SQL with generated ID
+      const result = await prisma.$queryRaw<Array<{
+        id: string;
+        name: string;
+        price: number;
+        description: string | null;
+        imageUrl: string | null;
+      }>>`
+        INSERT INTO products (id, name, price, description, "imageUrl", category, "inStock", "createdAt", "updatedAt")
+        VALUES (gen_random_uuid(), ${name}, ${parseFloat(price)}, ${description || null}, ${finalImageUrl || null}, 'general', true, NOW(), NOW())
+        RETURNING id, name, price, description, "imageUrl"
+      `;
+      newProduct = result[0];
     }
 
     console.log('POST /api/products - Created product:', newProduct);

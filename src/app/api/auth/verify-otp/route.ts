@@ -3,57 +3,81 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, otp } = await request.json();
+    const { email, otpCode } = await request.json();
 
     // Validate input
-    if (!email || !otp) {
+    if (!email || !otpCode) {
       return NextResponse.json(
-        { error: 'Email and OTP are required' },
+        { error: 'Email and OTP code are required' },
         { status: 400 }
       );
     }
 
-    // Find user with matching email and OTP
-    const foundUser = await prisma.user.findFirst({
-      where: {
-        email,
-        otp
-      }
-    });
+    // Find user by email with OTP details
+    const result = await prisma.$queryRaw`
+      SELECT id, name, email, "isVerified", "otpCode", "otpExpiry"
+      FROM users
+      WHERE email = ${email}
+      LIMIT 1
+    `;
 
-    if (!foundUser) {
+    const users = Array.isArray(result) ? result : [result];
+    const user = users[0];
+
+    if (!user) {
       return NextResponse.json(
-        { error: 'Invalid OTP or email' },
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    if (user.isVerified) {
+      return NextResponse.json(
+        { error: 'User is already verified' },
+        { status: 400 }
+      );
+    }
+
+    if (!user.otpCode || !user.otpExpiry) {
+      return NextResponse.json(
+        { error: 'No OTP found. Please request a new OTP.' },
         { status: 400 }
       );
     }
 
     // Check if OTP has expired
-    if (foundUser.otpExpiry && new Date() > foundUser.otpExpiry) {
+    const now = new Date();
+    const otpExpiry = new Date(user.otpExpiry);
+    
+    if (now > otpExpiry) {
       return NextResponse.json(
-        { error: 'OTP has expired' },
+        { error: 'OTP has expired. Please request a new OTP.' },
         { status: 400 }
       );
     }
 
-    // Update user as verified and clear OTP
-    await prisma.user.update({
-      where: { id: foundUser.id },
-      data: {
-        isVerified: true,
-        otp: null,
-        otpExpiry: null,
-        updatedAt: new Date()
-      }
-    });
+    // Verify OTP code
+    if (user.otpCode !== otpCode.toString()) {
+      return NextResponse.json(
+        { error: 'Invalid OTP code. Please check and try again.' },
+        { status: 400 }
+      );
+    }
+
+    // OTP is valid - verify the user
+    await prisma.$queryRaw`
+      UPDATE users
+      SET "isVerified" = true, "otpCode" = NULL, "otpExpiry" = NULL, "updatedAt" = NOW()
+      WHERE id = ${user.id}
+    `;
 
     return NextResponse.json({
-      message: 'Account verified successfully',
+      message: 'Email verified successfully! You can now log in.',
       user: {
-        id: foundUser.id,
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        isVerified: true
       }
     }, { status: 200 });
 

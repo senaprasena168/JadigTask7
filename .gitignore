@@ -125,7 +125,7 @@ temp/
 public/uploads/*
 !public/uploads/.gitkeep
 
-# Drizzle
-drizzle/
-
 /src/generated/prisma
+
+# Test scripts
+test-scripts/
