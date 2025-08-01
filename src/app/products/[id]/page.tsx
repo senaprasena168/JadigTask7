@@ -72,7 +72,7 @@ export default function ProductDetailPage() {
       <div className='grid md:grid-cols-2 gap-8'>
         <div className='aspect-square relative bg-gray-100 rounded-lg overflow-hidden'>
           <Image
-            src={product.imageUrl || `/api/images/${product.id}`}
+            src={product.imageUrl || '/placeholder-image.jpg'}
             alt={product.name}
             fill
             className='object-cover'

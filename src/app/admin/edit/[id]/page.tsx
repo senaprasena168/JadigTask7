@@ -16,7 +16,7 @@ function EditProductPageContent() {
   const [formData, setFormData] = useState({
     name: '',
     price: '',
-    image: '',
+    imageUrl: '',
     description: '',
   });
 
@@ -34,8 +34,8 @@ function EditProductPageContent() {
     if (product) {
       setFormData({
         name: product.name || '',
-        price: product.price || '',
-        image: product.image || '',
+        price: product.price?.toString() || '',
+        imageUrl: product.imageUrl || '',
         description: product.description || '',
       });
     }
@@ -47,7 +47,11 @@ function EditProductPageContent() {
     
     setSaving(true);
     try {
-      await dispatch(updateProduct({ id: product.id, ...formData })).unwrap();
+      await dispatch(updateProduct({
+        id: product.id,
+        ...formData,
+        price: parseFloat(formData.price)
+      })).unwrap();
       router.push('/admin');
     } catch (error) {
       console.error('Failed to update product:', error);
@@ -140,14 +144,14 @@ function EditProductPageContent() {
           </div>
 
           <div>
-            <label htmlFor='image' className='block text-sm font-medium text-gray-700 mb-2'>
+            <label htmlFor='imageUrl' className='block text-sm font-medium text-gray-700 mb-2'>
               Image URL
             </label>
             <input
               type='url'
-              id='image'
-              name='image'
-              value={formData.image}
+              id='imageUrl'
+              name='imageUrl'
+              value={formData.imageUrl}
               onChange={handleChange}
               className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
             />

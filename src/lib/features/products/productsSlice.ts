@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 export interface Product {
-  id: string;
+  id: string; // UUID string to match actual database
   name: string;
-  price: string;
+  price: number; // Number to match database decimal type
   description?: string;
   imageUrl?: string; // Primary image field matching database schema
   imageKey?: string;
@@ -33,22 +33,29 @@ export const fetchProducts = createAsyncThunk(
       const response = await fetch('/api/products', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store'
+        cache: 'no-store',
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${data.message || data.error || 'Request failed'}`);
+        throw new Error(
+          `HTTP ${response.status}: ${
+            data.message || data.error || 'Request failed'
+          }`
+        );
       }
-      
+
       if (!data.success) {
-        throw new Error(data.error || data.message || 'API returned success: false');
+        throw new Error(
+          data.error || data.message || 'API returned success: false'
+        );
       }
-      
+
       return data.data || [];
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
       return rejectWithValue(errorMessage);
     }
   }
@@ -59,15 +66,17 @@ export const fetchProduct = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await fetch(`/api/products/${id}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       return data;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 );
@@ -81,39 +90,46 @@ export const addProduct = createAsyncThunk(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to add product');
       }
-      
+
       return data.data;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 );
 
 export const updateProduct = createAsyncThunk(
   'products/updateProduct',
-  async ({ id, ...productData }: { id: number } & Partial<Product>, { rejectWithValue }) => {
+  async (
+    { id, ...productData }: { id: string } & Partial<Product>,
+    { rejectWithValue }
+  ) => {
     try {
       const response = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update product');
       }
-      
+
       return data;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 );
@@ -177,7 +193,9 @@ const productsSlice = createSlice({
       })
       .addCase(updateProduct.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.products.findIndex(p => p.id === action.payload.id);
+        const index = state.products.findIndex(
+          (p) => p.id === action.payload.id
+        );
         if (index !== -1) {
           state.products[index] = action.payload;
         }
@@ -192,4 +210,3 @@ const productsSlice = createSlice({
 
 export const { clearCurrentProduct, clearError } = productsSlice.actions;
 export default productsSlice.reducer;
-

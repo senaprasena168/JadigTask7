@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Use raw SQL to get all products with actual database structure
+    // Use raw SQL to get all products with actual database structure (UUID string IDs)
     const products = await prisma.$queryRaw<
       Array<{
-        id: number;
+        id: string;
         name: string;
         price: number;
         description: string | null;
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Get the created product
     const newProduct = await prisma.$queryRaw<
       Array<{
-        id: number;
+        id: string;
         name: string;
         price: number;
         description: string | null;

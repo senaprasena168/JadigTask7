@@ -137,7 +137,7 @@ function AddProductPageContent() {
       await dispatch(
         addProduct({
           name: formData.name,
-          price: formData.price,
+          price: parseFloat(formData.price),
           description: formData.description,
           imageUrl: imageUrl,
         })
