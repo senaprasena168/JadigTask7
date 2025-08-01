@@ -31,8 +31,11 @@ export async function middleware(request: NextRequest) {
   // Handle OAuth routes - prevent authenticated users from accessing OAuth flows
   if (pathname.startsWith('/api/auth/signin') || pathname.startsWith('/api/auth/callback')) {
     if (isAuthenticated) {
-      console.log('🚫 Authenticated user trying to access OAuth flow, redirecting to admin');
-      const response = NextResponse.redirect(new URL('/admin', request.url));
+      console.log('🚫 Authenticated user trying to access OAuth flow, redirecting based on role');
+      const userRole = session?.user?.role;
+      const isAdmin = userRole === 'admin';
+      const redirectUrl = isAdmin ? '/admin' : '/products';
+      const response = NextResponse.redirect(new URL(redirectUrl, request.url));
       response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
@@ -51,7 +54,10 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login') {
     if (isAuthenticated) {
       console.log('🔄 Authenticated user accessing login page, redirecting');
-      const redirect = request.nextUrl.searchParams.get('redirect') || '/admin';
+      const userRole = session?.user?.role;
+      const isAdmin = userRole === 'admin';
+      const defaultRedirect = isAdmin ? '/admin' : '/products';
+      const redirect = request.nextUrl.searchParams.get('redirect') || defaultRedirect;
       const response = NextResponse.redirect(new URL(redirect, request.url));
       // Add headers to prevent caching and force replace
       response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -65,38 +71,44 @@ export async function middleware(request: NextRequest) {
 
   // Handle admin routes
   if (pathname.startsWith('/admin')) {
-    console.log('🔒 Admin route detected, checking authentication...');
+    console.log('🔒 Admin route detected, checking authentication and admin role...');
 
-    if (isAuthenticated) {
-      console.log('✅ User authenticated, allowing access to admin');
-      return NextResponse.next();
-    }
-
-    // Not authenticated, redirect to login
-    console.log('❌ No authentication found, redirecting to login');
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    const response = NextResponse.redirect(loginUrl);
-    // Add headers to prevent caching and force replace
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    return response;
-  }
-
-  // Handle root path
-  if (pathname === '/') {
-    if (isAuthenticated) {
-      // Redirect authenticated users to admin (or dashboard when you create it)
-      console.log('🏠 Authenticated user on home, redirecting to admin');
-      const response = NextResponse.redirect(new URL('/admin', request.url));
+    if (!isAuthenticated) {
+      // Not authenticated, redirect to login
+      console.log('❌ No authentication found, redirecting to login');
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      const response = NextResponse.redirect(loginUrl);
       // Add headers to prevent caching and force replace
       response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
       return response;
     }
-    // Allow unauthenticated users to see home page
+
+    // Check if user has admin role
+    const userRole = session?.user?.role;
+    const isAdmin = userRole === 'admin';
+    
+    if (!isAdmin) {
+      console.log('❌ User authenticated but not admin, redirecting to products');
+      // Redirect non-admin users to products page
+      const response = NextResponse.redirect(new URL('/products', request.url));
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
+    }
+
+    console.log('✅ User authenticated and is admin, allowing access');
+    return NextResponse.next();
+  }
+
+  // Handle root path
+  if (pathname === '/') {
+    // Allow all users (authenticated and unauthenticated) to access home page
+    // Remove automatic redirect to admin for authenticated users
+    console.log('🏠 User accessing home page, allowing access');
     return NextResponse.next();
   }
 

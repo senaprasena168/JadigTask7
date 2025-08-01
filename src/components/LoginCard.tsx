@@ -27,7 +27,9 @@ const LoginCard = () => {
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
       const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get('redirect') || '/admin';
+      const isAdmin = session.user.role === 'admin';
+      const defaultRedirect = isAdmin ? '/admin' : '/products';
+      const redirect = urlParams.get('redirect') || defaultRedirect;
 
       // Use window.location.replace to prevent back button issues
       window.location.replace(redirect);
@@ -119,8 +121,7 @@ const LoginCard = () => {
     setLoading(true);
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get('redirect') || '/admin';
-
+      
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -132,6 +133,14 @@ const LoginCard = () => {
       } else if (result?.ok) {
         // Success - NextAuth will handle the session
         showMessage('Login successful!');
+        
+        // Get the updated session to determine redirect
+        const response = await fetch('/api/auth/session');
+        const sessionData = await response.json();
+        const isAdmin = sessionData?.user?.role === 'admin';
+        const defaultRedirect = isAdmin ? '/admin' : '/products';
+        const redirect = urlParams.get('redirect') || defaultRedirect;
+        
         window.location.replace(redirect);
       }
     } catch (error) {
@@ -145,11 +154,11 @@ const LoginCard = () => {
     setLoading(true);
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get('redirect') || '/admin';
+      const redirect = urlParams.get('redirect');
 
       // Use replace to prevent back button issues
       const result = await signIn('google', {
-        callbackUrl: redirect,
+        callbackUrl: redirect || undefined, // Let auth.ts handle the default redirect
         redirect: false, // Handle redirect manually
       });
 
@@ -157,8 +166,8 @@ const LoginCard = () => {
         // Use replace to prevent adding to history
         window.location.replace(result.url);
       } else if (result?.ok) {
-        // Success - redirect manually
-        window.location.replace(redirect);
+        // Success - let useEffect handle the redirect based on user role
+        // The session will be updated and useEffect will trigger
       }
     } catch (error) {
       showMessage('Google sign-in failed. Please try again.');

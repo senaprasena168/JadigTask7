@@ -5,7 +5,6 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './src/lib/prisma';
 import bcrypt from 'bcryptjs';
 
-
 declare module 'next-auth' {
   interface User {
     role?: string;
@@ -49,13 +48,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           // Use raw SQL to query user with actual database structure
-          const users = await prisma.$queryRaw<Array<{
-            id: string;
-            name: string | null;
-            email: string;
-            password: string | null;
-            isAdmin: boolean;
-          }>>`
+          const users = await prisma.$queryRaw<
+            Array<{
+              id: string;
+              name: string | null;
+              email: string;
+              password: string | null;
+              isAdmin: boolean;
+            }>
+          >`
             SELECT id, name, email, password, "isAdmin"
             FROM users
             WHERE email = ${credentials.email as string}
@@ -76,11 +77,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
 
+          // Only grant admin privileges to specific email
+          const isSpecificAdmin = user.email === "aingmeongshop@gmail.com";
+          
           return {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: user.isAdmin ? "admin" : "user",
+            role: (user.isAdmin && isSpecificAdmin) ? 'admin' : 'user',
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -97,18 +101,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === 'google') {
         try {
           // Check if user exists in database using raw SQL
-          const existingUsers = await prisma.$queryRaw<Array<{
-            id: string;
-            email: string;
-          }>>`
+          const existingUsers = await prisma.$queryRaw<
+            Array<{
+              id: string;
+              email: string;
+            }>
+          >`
             SELECT id, email FROM users WHERE email = ${user.email!} LIMIT 1
           `;
 
           if (existingUsers.length === 0) {
-            // Create new user with admin role using raw SQL
+            // Create new user with regular user role (not admin) using raw SQL
             await prisma.$executeRaw`
               INSERT INTO users (id, name, email, password, "isAdmin", "isVerified", provider, "createdAt", "updatedAt")
-              VALUES (gen_random_uuid(), ${user.name!}, ${user.email!}, NULL, true, true, 'google', NOW(), NOW())
+              VALUES (gen_random_uuid(), ${user.name!}, ${user.email!}, NULL, false, true, 'google', NOW(), NOW())
             `;
           }
         } catch (error) {
@@ -119,9 +125,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // --- NEW LOGIC FOR SERVER-SIDE REDIRECT FOR OAuth ---
       // This ensures that after a successful OAuth login, the browser history
-      // entry for the OAuth callback is replaced by the dashboard.
+      // entry for the OAuth callback is replaced by the appropriate dashboard.
       if (account && user && account.type === 'oauth') {
-        const dashboardUrl = '/admin'; // This is your desired post-login URL
+        // Check if user should be admin (only specific email)
+        const isSpecificAdmin = user.email === "aingmeongshop@gmail.com";
+        const dashboardUrl = isSpecificAdmin ? '/admin' : '/products'; // Redirect normal users to products
         console.log(`[Auth.js] Redirecting OAuth user to: ${dashboardUrl}`);
         // For Auth.js v5, we return a redirect URL string instead of Response object
         return dashboardUrl;
@@ -138,21 +146,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (account?.provider === 'google') {
           try {
             // Get fresh user data from database using raw SQL
-            const dbUsers = await prisma.$queryRaw<Array<{
-              id: string;
-              name: string | null;
-              email: string;
-              isAdmin: boolean;
-            }>>`
+            const dbUsers = await prisma.$queryRaw<
+              Array<{
+                id: string;
+                name: string | null;
+                email: string;
+                isAdmin: boolean;
+              }>
+            >`
               SELECT id, name, email, "isAdmin" FROM users WHERE email = ${user?.email!} LIMIT 1
             `;
-            
+
             if (dbUsers.length > 0) {
               const dbUser = dbUsers[0];
+              // Only grant admin privileges to specific email for OAuth users
+              const isSpecificAdmin = dbUser.email === "aingmeongshop@gmail.com";
+              
               // Create a fresh token with new user data
               return {
                 ...token,
-                role: dbUser.isAdmin ? "admin" : "user",
+                role: (dbUser.isAdmin && isSpecificAdmin) ? 'admin' : 'user',
                 id: dbUser.id,
                 email: dbUser.email,
                 name: dbUser.name,
@@ -162,9 +175,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           } catch (error) {
             console.error('Error fetching user in JWT callback:', error);
             // Don't fail the entire auth process, use default values
+            // Only grant admin privileges to specific email, default to user for OAuth
+            const isSpecificAdmin = user?.email === "aingmeongshop@gmail.com";
             return {
               ...token,
-              role: 'admin',
+              role: isSpecificAdmin ? 'admin' : 'user',
               id: user?.id || token.sub,
               email: user?.email,
               name: user?.name,
@@ -183,21 +198,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } else if (account?.provider === 'google' && token.email) {
         try {
           // Get user from database using raw SQL
-          const dbUsers = await prisma.$queryRaw<Array<{
-            id: string;
-            isAdmin: boolean;
-          }>>`
+          const dbUsers = await prisma.$queryRaw<
+            Array<{
+              id: string;
+              isAdmin: boolean;
+            }>
+          >`
             SELECT id, "isAdmin" FROM users WHERE email = ${token.email} LIMIT 1
           `;
-          
+
           if (dbUsers.length > 0) {
             const dbUser = dbUsers[0];
-            token.role = dbUser.isAdmin ? "admin" : "user";
+            // Only grant admin privileges to specific email
+            const isSpecificAdmin = token.email === "aingmeongshop@gmail.com";
+            token.role = (dbUser.isAdmin && isSpecificAdmin) ? 'admin' : 'user';
             token.id = dbUser.id;
           }
         } catch (error) {
           console.error('Error fetching user in JWT callback:', error);
-          token.role = 'admin';
+          // Only grant admin privileges to specific email, default to user for OAuth
+          const isSpecificAdmin = token.email === "aingmeongshop@gmail.com";
+          token.role = isSpecificAdmin ? 'admin' : 'user';
         }
       }
       return token;

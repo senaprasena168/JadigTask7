@@ -6,7 +6,7 @@ export async function GET() {
     console.log('Testing products API...');
     
     const sql = neon(process.env.DATABASE_URL!);
-    const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
+    const products = await sql`SELECT * FROM products ORDER BY "createdAt" DESC`;
     
     return NextResponse.json({
       success: true,

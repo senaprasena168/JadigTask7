@@ -4,14 +4,20 @@ import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchProduct, clearCurrentProduct } from '@/lib/features/products/productsSlice';
+import { formatRupiah } from '@/lib/currency';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { data: session } = useSession();
   const { currentProduct: product, loading, error } = useAppSelector((state) => state.products);
+  
+  // Check if user is admin
+  const isAdmin = session?.user?.role === 'admin';
 
   useEffect(() => {
     if (params.id) {
@@ -66,7 +72,7 @@ export default function ProductDetailPage() {
       <div className='grid md:grid-cols-2 gap-8'>
         <div className='aspect-square relative bg-gray-100 rounded-lg overflow-hidden'>
           <Image
-            src={product.imageUrl || product.image || `/api/images/${product.id}`}
+            src={product.imageUrl || `/api/images/${product.id}`}
             alt={product.name}
             fill
             className='object-cover'
@@ -83,7 +89,7 @@ export default function ProductDetailPage() {
               {product.name}
             </h1>
             <p className='text-3xl font-bold text-blue-600'>
-              ${product.price}
+              {formatRupiah(product.price)}
             </p>
           </div>
 
@@ -97,12 +103,14 @@ export default function ProductDetailPage() {
           )}
 
           <div className='flex gap-4'>
-            <Link
-              href={`/admin/edit/${product.id}`}
-              className='bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors'
-            >
-              Edit Product
-            </Link>
+            {isAdmin && (
+              <Link
+                href={`/admin/edit/${product.id}`}
+                className='bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors'
+              >
+                Edit Product
+              </Link>
+            )}
             <button
               onClick={() => router.back()}
               className='bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors'

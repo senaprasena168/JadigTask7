@@ -15,7 +15,7 @@ export default function Navbar() {
     try {
       await signOut({
         redirect: false,
-        callbackUrl: '/'
+        callbackUrl: '/',
       });
       // Use window.location.replace to prevent back button issues
       window.location.replace('/');
@@ -26,43 +26,44 @@ export default function Navbar() {
     }
   };
 
-  // Check if user is authenticated
+  // Check if user is authenticated and is admin
   const isAuthenticated = status === 'authenticated' && session?.user;
+  const isAdmin = isAuthenticated && session?.user?.role === 'admin';
 
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
     { href: '/profile', label: 'Profile' },
     { href: '/products', label: 'Products' },
-    { href: '/admin', label: 'Admin' }, // Always show Admin menu
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []), // Only show Admin menu to admin users
     ...(!isAuthenticated ? [{ href: '/login', label: 'Login' }] : []),
   ];
 
   return (
-    <nav className="bg-blue-600 text-white shadow-lg">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
+    <nav className='bg-blue-600 text-white shadow-lg'>
+      <div className='max-w-6xl mx-auto px-4'>
+        <div className='flex justify-between items-center h-16'>
+          <div className='flex items-center space-x-3'>
             {/* Profile picture */}
-            <div className="w-10 h-10 rounded-full overflow-hidden">
+            <div className='w-10 h-10 rounded-full overflow-hidden'>
               <Image
-                src="/profile-cat.png"
-                alt="Profile Cat"
+                src='/profile-cat.png'
+                alt='Profile Cat'
                 width={40}
                 height={40}
-                className="w-full h-full object-cover"
+                className='w-full h-full object-cover'
               />
             </div>
-            
+
             <Link
-              href="/"
-              className="text-xl font-bold hover:text-blue-200 transition-colors"
+              href='/'
+              className='text-xl font-bold hover:text-blue-200 transition-colors'
             >
               Cat Food Store
             </Link>
           </div>
-          
-          <div className="hidden md:flex space-x-6">
+
+          <div className='hidden md:flex space-x-6'>
             {navLinks.map(({ href, label }) => (
               <Link
                 key={href}
@@ -82,14 +83,22 @@ export default function Navbar() {
 
           {/* User info and logout */}
           {isAuthenticated && (
-            <div className="hidden md:flex items-center space-x-4">
-              <div className="text-sm text-blue-200 text-right">
-                <div className="font-medium">{session.user.name || session.user.email}</div>
-                <div className="text-xs opacity-80">{session.user.email}</div>
+            <div className='hidden md:flex items-center space-x-4'>
+              {/* Admin badge - only show for admin users */}
+              {isAdmin && (
+                <div className='text-yellow-400 font-bold text-sm px-2 py-1 bg-red-100 bg-opacity-20 rounded border border-red-400'>
+                  ADMIN
+                </div>
+              )}
+              <div className='text-sm text-blue-200 text-right'>
+                <div className='font-medium'>
+                  {session.user.name || session.user.email}
+                </div>
+                <div className='text-xs opacity-80'>{session.user.email}</div>
               </div>
               <button
                 onClick={handleLogout}
-                className="bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded text-sm transition-colors"
+                className='bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded text-sm transition-colors'
               >
                 Logout
               </button>
@@ -97,10 +106,20 @@ export default function Navbar() {
           )}
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button className="text-white hover:text-blue-200 p-2">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <div className='md:hidden'>
+            <button className='text-white hover:text-blue-200 p-2'>
+              <svg
+                className='h-6 w-6'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M4 6h16M4 12h16M4 18h16'
+                />
               </svg>
             </button>
           </div>

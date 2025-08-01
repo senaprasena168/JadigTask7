@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchProducts } from '@/lib/features/products/productsSlice';
 import { validateProduct } from '@/lib/validations';
+import { formatRupiah } from '@/lib/currency';
 import Image from 'next/image';
 import clsx from 'clsx';
 import AdminProtection from '@/components/AdminProtection';
@@ -22,7 +23,7 @@ function AdminPageContent() {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  const handleDeleteProduct = async (id: number) => {
+  const handleDeleteProduct = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     
     try {
@@ -83,7 +84,7 @@ function AdminPageContent() {
     // For new products, we don't need to specify productId since we're creating a new product
     // The backend will handle the image upload without needing to update an existing product
 
-    const response = await fetch('/api/products/upload-image', {
+    const response = await fetch('/api/products/upload-image-simple', {
       method: 'POST',
       body: formData,
     });
@@ -124,7 +125,7 @@ function AdminPageContent() {
       }
       
       if (productData.price && parseFloat(productData.price) > 999999.99) {
-        errors.push('Price cannot exceed $999,999.99');
+        errors.push('Price cannot exceed Rp. 999.999,-');
       }
 
       if (errors.length > 0) {
@@ -155,16 +156,20 @@ function AdminPageContent() {
       });
 
       const result = await response.json();
+      console.log('Add product response:', result);
       
-      if (response.ok) {
+      if (response.ok && result.success) {
         setShowAddForm(false);
         setImageFile(null);
         setImagePreview('');
         setImageError('');
         setFormErrors([]);
         dispatch(fetchProducts());
+        alert('Product added successfully!');
       } else {
-        setFormErrors([result.error || 'Failed to add product']);
+        const errorMessage = result.message || result.error || 'Failed to add product';
+        setFormErrors([errorMessage]);
+        console.error('Add product error:', result);
       }
     } catch (error) {
       console.error('Error adding product:', error);
@@ -205,6 +210,17 @@ function AdminPageContent() {
       {showAddForm && (
         <div className='bg-white p-6 rounded-lg shadow-md mb-8'>
           <h2 className='text-xl font-semibold mb-4'>Add New Product</h2>
+          
+          {formErrors.length > 0 && (
+            <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>
+              <ul className='list-disc list-inside'>
+                {formErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -345,7 +361,7 @@ function AdminPageContent() {
                       <div className='flex items-center space-x-3'>
                         <div className='w-12 h-12 bg-gray-200 rounded-md overflow-hidden flex-shrink-0'>
                           <Image
-                            src={product.image || `/api/images/${product.id}`}
+                            src={product.imageUrl || '/nopic.jpg'}
                             alt={product.name}
                             width={48}
                             height={48}
@@ -361,7 +377,7 @@ function AdminPageContent() {
                       </div>
                     </td>
                     <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
-                      ${product.price}
+                      {formatRupiah(product.price)}
                     </td>
                     <td className='px-6 py-4 text-sm text-gray-900 max-w-xs truncate'>
                       {product.description || 'No description'}

@@ -11,7 +11,9 @@ export default function AuthRedirectHandler() {
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      const redirect = searchParams.get('redirect') || '/admin';
+      const isAdmin = session.user.role === 'admin';
+      const defaultRedirect = isAdmin ? '/admin' : '/products';
+      const redirect = searchParams.get('redirect') || defaultRedirect;
       
       // Clear the browser history to prevent back button issues
       // Replace the current entry and clear any OAuth-related history

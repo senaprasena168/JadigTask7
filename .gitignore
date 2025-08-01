@@ -128,4 +128,5 @@ public/uploads/*
 
 /src/generated/prisma
 
-
+#notes
+notes

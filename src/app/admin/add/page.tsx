@@ -16,7 +16,7 @@ function AddProductPageContent() {
   const [formData, setFormData] = useState({
     name: '',
     price: '',
-    image: '',
+    imageUrl: '',
     description: '',
   });
 
@@ -49,7 +49,7 @@ function AddProductPageContent() {
     setImageFile(file);
     
     // Clear URL input when file is selected
-    setFormData(prev => ({ ...prev, image: '' }));
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
     
     // Create preview
     const reader = new FileReader();
@@ -59,11 +59,11 @@ function AddProductPageContent() {
     reader.readAsDataURL(file);
   };
 
-  const uploadImage = async (file: File): Promise<{ url: string, imageId: string }> => {
+  const uploadImage = async (file: File): Promise<{ imageUrl: string, imageKey: string, imageType: string }> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('image', file);
 
-    const response = await fetch('/api/upload', {
+    const response = await fetch('/api/products/upload-image-simple', {
       method: 'POST',
       body: formData,
     });
@@ -73,7 +73,15 @@ function AddProductPageContent() {
     }
 
     const data = await response.json();
-    return data;
+    if (!data.success) {
+      throw new Error(data.error || 'Upload failed');
+    }
+    
+    return {
+      imageUrl: data.imageUrl,
+      imageKey: data.imageKey,
+      imageType: data.imageType
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,21 +89,23 @@ function AddProductPageContent() {
     setLoading(true);
 
     try {
-      let imageUrl = formData.image;
-      let imageId = null;
+      let imageUrl = formData.imageUrl;
+      let imageKey = null;
+      let imageType = null;
       
       // Upload image if file is selected
       if (imageFile) {
         const uploadResponse = await uploadImage(imageFile);
-        imageUrl = uploadResponse.url;
-        imageId = uploadResponse.imageId;
+        imageUrl = uploadResponse.imageUrl;
+        imageKey = uploadResponse.imageKey;
+        imageType = uploadResponse.imageType;
       }
 
       await dispatch(addProduct({
-        ...formData,
-        image: imageUrl,
-        imageKey: imageId,
-        price: formData.price
+        name: formData.name,
+        price: formData.price,
+        description: formData.description,
+        imageUrl: imageUrl,
       })).unwrap();
       
       router.push('/admin');
@@ -186,14 +196,14 @@ function AddProductPageContent() {
 
           {/* OR URL Input */}
           <div className="border-t pt-4">
-            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
               Or enter Image URL
             </label>
             <input
               type="url"
-              id="image"
-              name="image"
-              value={formData.image}
+              id="imageUrl"
+              name="imageUrl"
+              value={formData.imageUrl}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="https://example.com/image.jpg"

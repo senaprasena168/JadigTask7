@@ -1,12 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   price: string;
   description?: string;
-  image?: string; // Legacy field for backward compatibility
-  imageUrl?: string; // New field matching database schema
+  imageUrl?: string; // Primary image field matching database schema
   imageKey?: string;
   imageType?: string;
   createdAt?: string;

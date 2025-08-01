@@ -3,9 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
-import AuthRedirectHandler from '@/components/AuthRedirectHandler';
 import Navbar from '@/components/Navbar';
-import { Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,9 +21,6 @@ export default async function RootLayout({
     <html lang='en'>
       <body className={inter.className}>
         <SessionProviderWrapper>
-          <Suspense fallback={null}>
-            <AuthRedirectHandler />
-          </Suspense>
           <Providers>
             <Navbar />
             <main>{children}</main>
