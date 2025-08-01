@@ -29,14 +29,22 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!session?.user;
 
   // Handle OAuth routes - prevent authenticated users from accessing OAuth flows
-  if (pathname.startsWith('/api/auth/signin') || pathname.startsWith('/api/auth/callback')) {
+  if (
+    pathname.startsWith('/api/auth/signin') ||
+    pathname.startsWith('/api/auth/callback')
+  ) {
     if (isAuthenticated) {
-      console.log('🚫 Authenticated user trying to access OAuth flow, redirecting based on role');
+      console.log(
+        '� Authenticated user trying to access OAuth flow, redirecting based on role'
+      );
       const userRole = session?.user?.role;
       const isAdmin = userRole === 'admin';
       const redirectUrl = isAdmin ? '/admin' : '/products';
       const response = NextResponse.redirect(new URL(redirectUrl, request.url));
-      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set(
+        'Cache-Control',
+        'no-cache, no-store, must-revalidate'
+      );
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
       return response;
@@ -57,10 +65,14 @@ export async function middleware(request: NextRequest) {
       const userRole = session?.user?.role;
       const isAdmin = userRole === 'admin';
       const defaultRedirect = isAdmin ? '/admin' : '/products';
-      const redirect = request.nextUrl.searchParams.get('redirect') || defaultRedirect;
+      const redirect =
+        request.nextUrl.searchParams.get('redirect') || defaultRedirect;
       const response = NextResponse.redirect(new URL(redirect, request.url));
       // Add headers to prevent caching and force replace
-      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set(
+        'Cache-Control',
+        'no-cache, no-store, must-revalidate'
+      );
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
       return response;
@@ -71,7 +83,9 @@ export async function middleware(request: NextRequest) {
 
   // Handle admin routes
   if (pathname.startsWith('/admin')) {
-    console.log('🔒 Admin route detected, checking authentication and admin role...');
+    console.log(
+      '🔒 Admin route detected, checking authentication and admin role...'
+    );
 
     if (!isAuthenticated) {
       // Not authenticated, redirect to login
@@ -80,7 +94,10 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set('redirect', pathname);
       const response = NextResponse.redirect(loginUrl);
       // Add headers to prevent caching and force replace
-      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set(
+        'Cache-Control',
+        'no-cache, no-store, must-revalidate'
+      );
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
       return response;
@@ -89,12 +106,17 @@ export async function middleware(request: NextRequest) {
     // Check if user has admin role
     const userRole = session?.user?.role;
     const isAdmin = userRole === 'admin';
-    
+
     if (!isAdmin) {
-      console.log('❌ User authenticated but not admin, redirecting to products');
+      console.log(
+        '❌ User authenticated but not admin, redirecting to products'
+      );
       // Redirect non-admin users to products page
       const response = NextResponse.redirect(new URL('/products', request.url));
-      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set(
+        'Cache-Control',
+        'no-cache, no-store, must-revalidate'
+      );
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
       return response;
@@ -116,7 +138,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

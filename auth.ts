@@ -78,13 +78,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           // Only grant admin privileges to specific email
-          const isSpecificAdmin = user.email === "aingmeongshop@gmail.com";
-          
+          const isSpecificAdmin = user.email === 'aingmeongshop@gmail.com';
+
           return {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: (user.isAdmin && isSpecificAdmin) ? 'admin' : 'user',
+            role: user.isAdmin && isSpecificAdmin ? 'admin' : 'user',
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -128,7 +128,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // entry for the OAuth callback is replaced by the appropriate dashboard.
       if (account && user && account.type === 'oauth') {
         // Check if user should be admin (only specific email)
-        const isSpecificAdmin = user.email === "aingmeongshop@gmail.com";
+        const isSpecificAdmin = user.email === 'aingmeongshop@gmail.com';
         const dashboardUrl = isSpecificAdmin ? '/admin' : '/products'; // Redirect normal users to products
         console.log(`[Auth.js] Redirecting OAuth user to: ${dashboardUrl}`);
         // For Auth.js v5, we return a redirect URL string instead of Response object
@@ -160,12 +160,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (dbUsers.length > 0) {
               const dbUser = dbUsers[0];
               // Only grant admin privileges to specific email for OAuth users
-              const isSpecificAdmin = dbUser.email === "aingmeongshop@gmail.com";
-              
+              const isSpecificAdmin =
+                dbUser.email === 'aingmeongshop@gmail.com';
+
               // Create a fresh token with new user data
               return {
                 ...token,
-                role: (dbUser.isAdmin && isSpecificAdmin) ? 'admin' : 'user',
+                role: dbUser.isAdmin && isSpecificAdmin ? 'admin' : 'user',
                 id: dbUser.id,
                 email: dbUser.email,
                 name: dbUser.name,
@@ -176,7 +177,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.error('Error fetching user in JWT callback:', error);
             // Don't fail the entire auth process, use default values
             // Only grant admin privileges to specific email, default to user for OAuth
-            const isSpecificAdmin = user?.email === "aingmeongshop@gmail.com";
+            const isSpecificAdmin = user?.email === 'aingmeongshop@gmail.com';
             return {
               ...token,
               role: isSpecificAdmin ? 'admin' : 'user',
@@ -210,14 +211,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (dbUsers.length > 0) {
             const dbUser = dbUsers[0];
             // Only grant admin privileges to specific email
-            const isSpecificAdmin = token.email === "aingmeongshop@gmail.com";
-            token.role = (dbUser.isAdmin && isSpecificAdmin) ? 'admin' : 'user';
+            const isSpecificAdmin = token.email === 'aingmeongshop@gmail.com';
+            token.role = dbUser.isAdmin && isSpecificAdmin ? 'admin' : 'user';
             token.id = dbUser.id;
           }
         } catch (error) {
           console.error('Error fetching user in JWT callback:', error);
           // Only grant admin privileges to specific email, default to user for OAuth
-          const isSpecificAdmin = token.email === "aingmeongshop@gmail.com";
+          const isSpecificAdmin = token.email === 'aingmeongshop@gmail.com';
           token.role = isSpecificAdmin ? 'admin' : 'user';
         }
       }

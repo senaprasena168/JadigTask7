@@ -16,7 +16,11 @@ export default async function Home() {
           Tailwind CSS, and Neon Database. Explore our premium cat food products and manage your inventory efficiently.
         </p>
         
-        <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12'>
+        <div className={`grid gap-6 mt-12 max-w-4xl mx-auto ${
+          isAdmin
+            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+        }`}>
           <Link
             href='/products'
             className='bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg shadow-lg transition-colors'
