@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx kill-port 3000 && next dev -p 3000",
     "dev:clean": "taskkill /f /im node.exe >nul 2>&1 || true && npm run dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
