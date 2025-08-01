@@ -20,8 +20,6 @@ export async function GET(
         price: true,
         description: true,
         imageUrl: true,
-        imageKey: true,
-        imageType: true,
         createdAt: true,
         updatedAt: true
       }
@@ -45,7 +43,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, price, imageUrl, imageKey, imageType, description } = body;
+    const { name, price, imageUrl, description } = body;
 
     // Check if product exists first
     const existingProduct = await prisma.product.findUnique({
@@ -56,10 +54,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // If there's a new image and an old one exists, delete the old one from R2
-    if (imageKey && existingProduct.imageKey && existingProduct.imageKey !== imageKey) {
-      await deleteImageFromR2(existingProduct.imageKey);
-    }
+    // Note: Skipping R2 image deletion since imageKey doesn't exist in schema
 
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(id) },
@@ -67,8 +62,6 @@ export async function PUT(
         name,
         price: parseFloat(price),
         imageUrl: imageUrl || existingProduct.imageUrl,
-        imageKey: imageKey || existingProduct.imageKey,
-        imageType: imageType || existingProduct.imageType,
         description,
         updatedAt: new Date()
       }
@@ -88,27 +81,53 @@ export async function DELETE(
   try {
     const { id } = await params;
     
-    // Get product first to check if it has an image to delete from R2
-    const product = await prisma.product.findUnique({
-      where: { id: parseInt(id) },
-      select: { id: true, imageKey: true }
-    });
+    // First, get the product to check if it has an image to delete from R2
+    const product = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        imageUrl: string | null;
+      }>
+    >`
+      SELECT id, "imageUrl"
+      FROM products
+      WHERE id = ${id}
+      LIMIT 1
+    `;
 
-    if (!product) {
+    if (product.length === 0) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // Delete image from R2 if it exists
-    if (product.imageKey) {
-      await deleteImageFromR2(product.imageKey);
+    const productData = product[0];
+
+    // If product has an image, try to delete it from R2
+    if (productData.imageUrl) {
+      try {
+        const imageKey = extractImageKey(productData.imageUrl);
+        if (imageKey) {
+          await deleteImageFromR2(imageKey);
+          console.log('Deleted image from R2:', imageKey);
+        }
+      } catch (r2Error) {
+        console.warn('Failed to delete image from R2:', r2Error);
+        // Continue with product deletion even if R2 deletion fails
+      }
     }
 
-    // Delete product from database
-    await prisma.product.delete({
-      where: { id: parseInt(id) }
-    });
+    // Delete product from database using raw SQL
+    const deleteResult = await prisma.$executeRaw`
+      DELETE FROM products
+      WHERE id = ${id}
+    `;
 
-    return NextResponse.json({ message: 'Product deleted successfully' });
+    if (deleteResult === 0) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Product deleted successfully'
+    });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
