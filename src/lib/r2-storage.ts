@@ -78,8 +78,9 @@ export async function uploadImageToR2(
       }
     }));
 
-    // Construct public URL
-    const imageUrl = `${process.env.CLOUDFLARE_R2_ENDPOINT}/${objectKey}`;
+    // Construct public URL using the public base URL if available
+    const publicBaseUrl = process.env.R2_PUBLIC_BASE_URL || process.env.CLOUDFLARE_R2_ENDPOINT;
+    const imageUrl = `${publicBaseUrl}/${objectKey}`;
 
     return {
       success: true,
@@ -135,7 +136,8 @@ export async function deleteImageFromR2(imageKey: string): Promise<DeleteResult>
  */
 export function getImageUrl(imageKey: string): string {
   if (!imageKey) return '';
-  return `${process.env.CLOUDFLARE_R2_ENDPOINT}/${imageKey}`;
+  const publicBaseUrl = process.env.R2_PUBLIC_BASE_URL || process.env.CLOUDFLARE_R2_ENDPOINT;
+  return `${publicBaseUrl}/${imageKey}`;
 }
 
 /**
@@ -144,10 +146,14 @@ export function getImageUrl(imageKey: string): string {
  * @returns The object key
  */
 export function extractImageKey(imageUrl: string): string {
-  if (!imageUrl || !process.env.CLOUDFLARE_R2_ENDPOINT) return '';
+  if (!imageUrl) return '';
   
+  const publicBaseUrl = process.env.R2_PUBLIC_BASE_URL || process.env.CLOUDFLARE_R2_ENDPOINT;
   const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT;
-  if (imageUrl.startsWith(endpoint)) {
+  
+  if (publicBaseUrl && imageUrl.startsWith(publicBaseUrl)) {
+    return imageUrl.replace(`${publicBaseUrl}/`, '');
+  } else if (endpoint && imageUrl.startsWith(endpoint)) {
     return imageUrl.replace(`${endpoint}/`, '');
   }
   

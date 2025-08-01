@@ -15,8 +15,14 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'pub-3b0f941c513a84f3fae53faec5de8b7e9.r2.dev',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
