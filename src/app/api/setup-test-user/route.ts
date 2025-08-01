@@ -6,13 +6,13 @@ const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    // Create a test user with the actual database structure
-    const hashedPassword = await bcrypt.hash('admin123', 12);
+    // Create the proper admin user with specified credentials
+    const hashedPassword = await bcrypt.hash('aingmeong', 12);
     
     // Use raw SQL to insert user with correct column names
     const result = await prisma.$executeRaw`
       INSERT INTO users (id, name, email, password, "isAdmin", "isVerified", provider, "createdAt", "updatedAt")
-      VALUES (gen_random_uuid(), 'Test Admin', 'admin@test.com', ${hashedPassword}, true, true, 'email', NOW(), NOW())
+      VALUES (gen_random_uuid(), 'aing meong', 'aingmeongshop@gmail.com', ${hashedPassword}, true, true, 'email', NOW(), NOW())
       ON CONFLICT (email) DO UPDATE SET
         password = ${hashedPassword},
         "isAdmin" = true,
@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: 'Test user created/updated successfully',
+      message: 'Admin user created/updated successfully',
       credentials: {
-        email: 'admin@test.com',
-        password: 'admin123'
+        name: 'aing meong',
+        email: 'aingmeongshop@gmail.com',
+        password: 'aingmeong'
       },
       result
     });

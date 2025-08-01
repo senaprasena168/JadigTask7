@@ -20,19 +20,18 @@ export async function GET() {
       )
     );
 
-    // Test creating a user with the new schema
-    const testUser = await prisma.user.create({
-      data: {
-        name: 'Test Session User',
-        email: 'test-session-' + Date.now() + '@example.com',
-        isVerified: true,
-        role: 'admin',
-        provider: 'email'
-      }
-    });
+    // Test creating a user with the new schema using raw SQL
+    const testEmail = 'test-session-' + Date.now() + '@example.com';
+    
+    await prisma.$executeRaw`
+      INSERT INTO users (id, name, email, "isVerified", "isAdmin", provider, "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), 'Test Session User', ${testEmail}, true, true, 'email', NOW(), NOW())
+    `;
 
     // Clean up test user
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.$executeRaw`
+      DELETE FROM users WHERE email = ${testEmail}
+    `;
 
     return NextResponse.json({
       success: true,
