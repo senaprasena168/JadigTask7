@@ -5,14 +5,15 @@ import {
 } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize R2 client
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: process.env.CLOUDFLARE_R2_ENDPOINT,
+// Initialize Supabase S3-compatible client
+const supabaseClient = new S3Client({
+  region: 'us-east-1', // Supabase uses us-east-1 for S3 compatibility
+  endpoint: process.env.SUPABASE_ENDPOINT,
   credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.SUPABASE_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.SUPABASE_SECRET_ACCESS_KEY!,
   },
+  forcePathStyle: true, // Required for Supabase S3 compatibility
 });
 
 export interface UploadResult {
@@ -28,13 +29,13 @@ export interface DeleteResult {
 }
 
 /**
- * Upload an image file to Cloudflare R2
+ * Upload an image file to Supabase Storage
  * @param file - The image file to upload
  * @param folder - The folder path (e.g., 'products', 'users')
  * @param productId - Optional product ID for organizing files
  * @returns Upload result with URL and key
  */
-export async function uploadImageToR2(
+export async function uploadImageToSupabase(
   file: File,
   folder: string = 'products',
   productId?: string | number
@@ -70,10 +71,10 @@ export async function uploadImageToR2(
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload to R2
-    await r2Client.send(
+    // Upload to Supabase Storage
+    await supabaseClient.send(
       new PutObjectCommand({
-        Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
+        Bucket: process.env.SUPABASE_BUCKET_NAME!,
         Key: objectKey,
         Body: buffer,
         ContentType: file.type,
@@ -84,10 +85,10 @@ export async function uploadImageToR2(
       })
     );
 
-    // Construct public URL using the public base URL if available
-    const publicBaseUrl =
-      process.env.R2_PUBLIC_BASE_URL || process.env.CLOUDFLARE_R2_ENDPOINT;
-    const imageUrl = `${publicBaseUrl}/${objectKey}`;
+    // Construct public URL for Supabase Storage
+    // Format: https://project-id.supabase.co/storage/v1/object/public/bucket-name/object-key
+    const supabaseUrl = process.env.SUPABASE_ENDPOINT!.replace('/storage/v1/s3', '');
+    const imageUrl = `${supabaseUrl}/storage/v1/object/public/${process.env.SUPABASE_BUCKET_NAME}/${objectKey}`;
 
     return {
       success: true,
@@ -95,7 +96,7 @@ export async function uploadImageToR2(
       imageKey: objectKey,
     };
   } catch (error) {
-    console.error('R2 upload error:', error);
+    console.error('Supabase upload error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Upload failed',
@@ -104,11 +105,11 @@ export async function uploadImageToR2(
 }
 
 /**
- * Delete an image from Cloudflare R2
- * @param imageKey - The R2 object key to delete
+ * Delete an image from Supabase Storage
+ * @param imageKey - The Supabase object key to delete
  * @returns Delete result
  */
-export async function deleteImageFromR2(
+export async function deleteImageFromSupabase(
   imageKey: string
 ): Promise<DeleteResult> {
   try {
@@ -119,9 +120,9 @@ export async function deleteImageFromR2(
       };
     }
 
-    await r2Client.send(
+    await supabaseClient.send(
       new DeleteObjectCommand({
-        Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
+        Bucket: process.env.SUPABASE_BUCKET_NAME!,
         Key: imageKey,
       })
     );
@@ -130,7 +131,7 @@ export async function deleteImageFromR2(
       success: true,
     };
   } catch (error) {
-    console.error('R2 delete error:', error);
+    console.error('Supabase delete error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Delete failed',
@@ -139,48 +140,44 @@ export async function deleteImageFromR2(
 }
 
 /**
- * Get a signed URL for private image access (if needed)
- * @param imageKey - The R2 object key
- * @returns The public URL (R2 bucket is public, so no signing needed)
+ * Get public URL for image access
+ * @param imageKey - The Supabase object key
+ * @returns The public URL
  */
-export function getImageUrl(imageKey: string): string {
+export function getSupabaseImageUrl(imageKey: string): string {
   if (!imageKey) return '';
-  const publicBaseUrl =
-    process.env.R2_PUBLIC_BASE_URL || process.env.CLOUDFLARE_R2_ENDPOINT;
-  return `${publicBaseUrl}/${imageKey}`;
+  const supabaseUrl = process.env.SUPABASE_ENDPOINT!.replace('/storage/v1/s3', '');
+  return `${supabaseUrl}/storage/v1/object/public/${process.env.SUPABASE_BUCKET_NAME}/${imageKey}`;
 }
 
 /**
- * Extract image key from full URL
+ * Extract image key from full Supabase URL
  * @param imageUrl - Full image URL
  * @returns The object key
  */
-export function extractImageKey(imageUrl: string): string {
+export function extractSupabaseImageKey(imageUrl: string): string {
   if (!imageUrl) return '';
 
-  const publicBaseUrl =
-    process.env.R2_PUBLIC_BASE_URL || process.env.CLOUDFLARE_R2_ENDPOINT;
-  const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT;
-
-  if (publicBaseUrl && imageUrl.startsWith(publicBaseUrl)) {
-    return imageUrl.replace(`${publicBaseUrl}/`, '');
-  } else if (endpoint && imageUrl.startsWith(endpoint)) {
-    return imageUrl.replace(`${endpoint}/`, '');
+  const supabaseUrl = process.env.SUPABASE_ENDPOINT!.replace('/storage/v1/s3', '');
+  const publicUrlPattern = `${supabaseUrl}/storage/v1/object/public/${process.env.SUPABASE_BUCKET_NAME}/`;
+  
+  if (imageUrl.startsWith(publicUrlPattern)) {
+    return imageUrl.replace(publicUrlPattern, '');
   }
 
   return '';
 }
 
 /**
- * Validate R2 configuration
+ * Validate Supabase configuration
  * @returns True if all required environment variables are set
  */
-export function validateR2Config(): boolean {
+export function validateSupabaseConfig(): boolean {
   const requiredEnvs = [
-    'CLOUDFLARE_R2_ACCESS_KEY_ID',
-    'CLOUDFLARE_R2_SECRET_ACCESS_KEY',
-    'CLOUDFLARE_R2_BUCKET_NAME',
-    'CLOUDFLARE_R2_ENDPOINT',
+    'SUPABASE_ACCESS_KEY_ID',
+    'SUPABASE_SECRET_ACCESS_KEY',
+    'SUPABASE_BUCKET_NAME',
+    'SUPABASE_ENDPOINT',
   ];
 
   return requiredEnvs.every((env) => process.env[env]);

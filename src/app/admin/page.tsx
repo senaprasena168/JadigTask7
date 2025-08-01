@@ -84,7 +84,7 @@ function AdminPageContent() {
     // For new products, we don't need to specify productId since we're creating a new product
     // The backend will handle the image upload without needing to update an existing product
 
-    const response = await fetch('/api/products/upload-image-simple', {
+    const response = await fetch('/api/products/upload-image', {
       method: 'POST',
       body: formData,
     });
@@ -96,7 +96,7 @@ function AdminPageContent() {
     }
 
     const data = await response.json();
-    return { url: data.imageUrl, imageId: data.imageUrl }; // Return the imageUrl
+    return { url: data.imageUrl, imageId: data.imageKey }; // Return the imageUrl and imageKey
   };
 
   const handleAddProduct = async (formData: FormData) => {
@@ -279,7 +279,7 @@ function AdminPageContent() {
                   className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
                 <p className='text-xs text-gray-500 mt-1'>
-                  Image must be in JPG or PNG format with 1MB max size.
+                  Image must be in JPG or PNG format with 1MB max size - Images will be stored in Supabase cloud storage.
                 </p>
                 {imageError && (
                   <p className='text-red-500 text-sm mt-1'>{imageError}</p>

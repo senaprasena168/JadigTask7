@@ -11,6 +11,13 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'tkylbqyaibzkciczlzuy.storage.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+      // Legacy Cloudflare R2 domains (kept for existing images)
+      {
+        protocol: 'https',
         hostname: 'e9538249533828c89615595ffd58bb91.r2.cloudflarestorage.com',
         port: '',
         pathname: '/**',

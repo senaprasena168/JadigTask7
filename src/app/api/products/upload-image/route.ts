@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { uploadImageToR2, validateR2Config } from '@/lib/r2-storage';
+import { uploadImageToSupabase, validateSupabaseConfig } from '@/lib/supabase-storage';
 
 export async function POST(request: NextRequest) {
   console.log('🚀 UPLOAD API CALLED');
   
   try {
-    // Validate R2 configuration
-    if (!validateR2Config()) {
-      console.log('❌ R2 configuration missing');
-      return NextResponse.json({ 
+    // Validate Supabase configuration
+    if (!validateSupabaseConfig()) {
+      console.log('❌ Supabase configuration missing');
+      return NextResponse.json({
         success: false,
-        error: 'R2 storage configuration is incomplete' 
+        error: 'Supabase storage configuration is incomplete'
       }, { status: 500 });
     }
 
@@ -41,18 +41,18 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Image validation passed');
 
-    // Upload to R2 using our utility
-    const uploadResult = await uploadImageToR2(imageFile, 'products', productId);
+    // Upload to Supabase using our utility
+    const uploadResult = await uploadImageToSupabase(imageFile, 'products', productId);
     
     if (!uploadResult.success) {
-      console.log('❌ R2 upload failed:', uploadResult.error);
-      return NextResponse.json({ 
+      console.log('❌ Supabase upload failed:', uploadResult.error);
+      return NextResponse.json({
         success: false,
-        error: uploadResult.error 
+        error: uploadResult.error
       }, { status: 500 });
     }
 
-    console.log('✅ R2 upload successful!');
+    console.log('✅ Supabase upload successful!');
     console.log('🔗 Image URL:', uploadResult.imageUrl);
     console.log('🔑 Image Key:', uploadResult.imageKey);
 
