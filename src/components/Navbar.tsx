@@ -5,11 +5,15 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import clsx from 'clsx';
+import { Backdoor } from './Backdoor';
+import LoginModal from './LoginModal';
+import { useLoginModal } from '../hooks/useLoginModal';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { isOpen, openModal, closeModal } = useLoginModal();
 
   const handleLogout = async () => {
     try {
@@ -26,6 +30,11 @@ export default function Navbar() {
     }
   };
 
+  const handleLoginSuccess = () => {
+    // Refresh the page to update the session state
+    window.location.reload();
+  };
+
   // Check if user is authenticated and is admin
   const isAuthenticated = status === 'authenticated' && session?.user;
   const isAdmin = isAuthenticated && session?.user?.role === 'admin';
@@ -36,7 +45,6 @@ export default function Navbar() {
     { href: '/profile', label: 'Profile' },
     { href: '/products', label: 'Products' },
     ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []), // Only show Admin menu to admin users
-    ...(!isAuthenticated ? [{ href: '/login', label: 'Login' }] : []),
   ];
 
   return (
@@ -44,15 +52,17 @@ export default function Navbar() {
       <div className='max-w-6xl mx-auto px-4'>
         <div className='flex justify-between items-center h-16'>
           <div className='flex items-center space-x-3'>
-            {/* Profile picture */}
-            <div className='w-10 h-10 rounded-full overflow-hidden'>
+            {/* Profile picture with Backdoor overlay */}
+            <div className='w-10 h-10 rounded-full overflow-hidden relative hover:ring-2 hover:ring-yellow-400 transition-all duration-200'>
               <Image
                 src='/profile-cat.png'
                 alt='Profile Cat'
                 width={40}
                 height={40}
-                className='w-full h-full object-cover'
+                className='w-full h-full object-cover hover:scale-110 transition-transform duration-200'
               />
+              {/* Backdoor component overlay - REMOVE BEFORE PRODUCTION */}
+              <Backdoor />
             </div>
 
             <Link
@@ -79,6 +89,16 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+            
+            {/* Login button for unauthenticated users */}
+            {!isAuthenticated && (
+              <button
+                onClick={openModal}
+                className='px-4 py-2 text-sm font-medium transition-colors relative whitespace-nowrap text-white hover:text-blue-200'
+              >
+                Login
+              </button>
+            )}
           </div>
 
           {/* User info and logout */}
@@ -125,6 +145,13 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </nav>
   );
 }

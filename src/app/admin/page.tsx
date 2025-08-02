@@ -34,10 +34,10 @@ function AdminPageContent() {
       if (response.ok) {
         dispatch(fetchProducts()); // Refresh the list
       } else {
-        alert('Failed to delete product');
+        (window as any).toast?.showError('Failed to delete product');
       }
     } catch (error) {
-      alert('Error deleting product');
+      (window as any).toast?.showError('Error deleting product');
     }
   };
 
@@ -165,7 +165,7 @@ function AdminPageContent() {
         setImageError('');
         setFormErrors([]);
         dispatch(fetchProducts());
-        alert('Product added successfully!');
+        (window as any).toast?.showSuccess('Product added successfully!');
       } else {
         const errorMessage = result.message || result.error || 'Failed to add product';
         setFormErrors([errorMessage]);

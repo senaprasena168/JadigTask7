@@ -1,0 +1,252 @@
+/**
+ * SpinLightContainer Styles
+ * 
+ * This CSS module provides the spinning light animation effects for the SpinLightContainer component.
+ * It's based on the original LoginCard styles but made modular and reusable.
+ * 
+ * Key Features:
+ * - Dual rotating gradient containers (blue + red/pink)
+ * - Smooth hover transitions for expansion
+ * - Drop shadow effects for depth
+ * - 4-second rotation cycles with staggered timing
+ * 
+ * Animation Details:
+ * - Blue gradient: rotates perpendicular (90° offset) 
+ * - Red gradient: rotates normally (0° start)
+ * - Both have -1s animation delay for synchronized effect
+ * 
+ * Dependencies: None (pure CSS)
+ * Browser Support: Modern browsers with CSS animations support
+ */
+
+.container {
+  position: relative;
+}
+
+.box {
+  position: relative;
+  background: transparent;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: height 0.5s ease, width 0.5s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Hover state for expansion - controlled by React state */
+.box.hovered {
+  /* Dimensions are controlled via inline styles from React props */
+}
+
+/* Remove default pseudo-elements that might interfere */
+.box::before,
+.box::after {
+  display: none;
+}
+
+/* Rotation animations - identical to original LoginCard */
+@keyframes rotating {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+@keyframes rotating-perpendicular {
+  0% {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-270deg);
+  }
+}
+
+/* Blue gradient container - rotates perpendicular */
+.gradientContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 630px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+  transition: width 0.5s ease;
+  animation: rotating-perpendicular 4s linear infinite;
+  animation-delay: -1s;
+}
+
+/* Expand blue gradient on hover */
+.box.hovered .gradientContainer {
+  width: 190px;
+}
+
+.gradientBox {
+  width: 100%;
+  height: 50%;
+  border-radius: 0;
+}
+
+.gradientBox1 {
+  position: relative;
+  background: linear-gradient(
+    to right,
+    rgb(0, 150, 255) 0%,
+    rgb(50, 50, 50) 100%
+  );
+}
+
+.gradientBox1::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(0, 150, 255, 0.6));
+  z-index: -1;
+}
+
+.gradientBox2 {
+  position: relative;
+  background: linear-gradient(
+    to left,
+    rgb(0, 150, 255) 0%,
+    rgb(50, 50, 50) 100%
+  );
+}
+
+.gradientBox2::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(0, 150, 255, 0.6));
+  z-index: -1;
+}
+
+/* Red/Pink gradient container - rotates normally */
+.redGradientContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 630px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+  transition: width 0.5s ease;
+  animation: rotating 4s linear infinite;
+  animation-delay: -1s;
+}
+
+/* Expand red gradient on hover */
+.box.hovered .redGradientContainer {
+  width: 190px;
+}
+
+.redGradientBox {
+  width: 100%;
+  height: 50%;
+  border-radius: 0;
+}
+
+.redGradientBox1 {
+  position: relative;
+  background: linear-gradient(
+    to right,
+    rgb(255, 50, 150) 0%,
+    rgb(80, 20, 20) 100%
+  );
+}
+
+.redGradientBox1::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(255, 50, 150, 0.6));
+  z-index: -1;
+}
+
+.redGradientBox2 {
+  position: relative;
+  background: linear-gradient(
+    to left,
+    rgb(255, 50, 150) 0%,
+    rgb(80, 20, 20) 100%
+  );
+}
+
+.redGradientBox2::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: 20px;
+  filter: drop-shadow(-15px 15px 50px rgba(255, 50, 150, 0.6));
+  z-index: -1;
+}
+
+/* Content area - where children components are rendered */
+.content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  padding: 20px;
+  overflow: hidden;
+}
+
+/* Content background - provides the dark background behind content */
+.content::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: rgb(58, 56, 56);
+  border-radius: 15px;
+  border: 8px solid #25252b;
+  z-index: -1;
+}
+
+/* 
+ * Customization Notes for Future Developers:
+ * 
+ * 1. Color Customization:
+ *    - Blue gradient: Change rgb(0, 150, 255) in .gradientBox1 and .gradientBox2
+ *    - Red gradient: Change rgb(255, 50, 150) in .redGradientBox1 and .redGradientBox2
+ *    - Background: Change rgb(58, 56, 56) in .content::before
+ *    - Border: Change #25252b in .content::before
+ * 
+ * 2. Animation Speed:
+ *    - Change "4s" in animation properties to adjust rotation speed
+ *    - Change "-1s" in animation-delay to adjust synchronization
+ * 
+ * 3. Size Adjustments:
+ *    - Gradient container height: Change "630px" in .gradientContainer and .redGradientContainer
+ *    - Expanded width: Change "190px" in hover states
+ *    - Drop shadow intensity: Adjust rgba opacity values in filter properties
+ * 
+ * 4. Transition Speed:
+ *    - Change "0.5s ease" values to adjust expansion/contraction speed
+ */

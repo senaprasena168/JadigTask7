@@ -146,7 +146,7 @@ function AddProductPageContent() {
       router.push('/admin');
     } catch (error) {
       console.error('Failed to add product:', error);
-      alert(`Failed to add product: ${error.message}`);
+      (window as any).toast?.showError(`Failed to add product: ${error.message}`);
     } finally {
       setLoading(false);
     }

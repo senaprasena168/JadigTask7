@@ -9,6 +9,9 @@
 tests-and-scripts/
 test-scripts/
 
+#external-scripts, exported/ imported modules, non essential files
+external-scripts
+
 # Dependencies
 node_modules
 /.pnp

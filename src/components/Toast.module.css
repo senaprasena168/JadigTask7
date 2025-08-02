@@ -1,0 +1,63 @@
+/**
+ * Toast Module CSS - Simplified Version
+ * 
+ * This is the simplified CSS for the Toast component that now uses SpinLightContainer.
+ * Most of the complex spinning light animations have been moved to the SpinLightContainer module.
+ * 
+ * What's left here:
+ * - Basic positioning and animation keyframes
+ * - Slide animations for toast entrance/exit
+ * - Any toast-specific styling not handled by SpinLightContainer
+ * 
+ * Original complex CSS backed up in: Toast.module.backup.css
+ * Spinning light effects now handled by: SpinLightContainer.module.css
+ */
+
+/* Animation keyframes for toast slide animations */
+@keyframes slideDown {
+  from {
+    transform: translate(-50%, -400px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -400px);
+    opacity: 0;
+  }
+}
+
+/* 
+ * Note: Most styling is now handled inline in the Toast component
+ * or by the SpinLightContainer component. This keeps the CSS minimal
+ * and makes the component more self-contained.
+ * 
+ * The original complex CSS with 9 animation containers has been
+ * replaced by the modular SpinLightContainer approach.
+ */
+
+/* Utility classes for future use if needed */
+.toastWrapper {
+  /* Reserved for future toast wrapper styling */
+}
+
+.toastContent {
+  /* Reserved for future toast content styling */
+}
+
+/* Type-specific color variables for consistency */
+:root {
+  --toast-success-color: #00ff88;
+  --toast-error-color: #ff4444;
+  --toast-warning-color: #ffaa00;
+  --toast-info-color: #00ccff;
+}

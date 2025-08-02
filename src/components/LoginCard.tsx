@@ -11,7 +11,12 @@ const LoginCard = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showMessageState, setShowMessageState] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasInputFocus, setHasInputFocus] = useState(false);
+  const [isMouseOver, setIsMouseOver] = useState(false);
+  const [collapseTimeout, setCollapseTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const [isRegistering, setIsRegistering] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [otpCode, setOtpCode] = useState('');
@@ -35,6 +40,20 @@ const LoginCard = () => {
       window.location.replace(redirect);
     }
   }, [session, status, router]);
+
+  // Expand when either focused or hovered
+  useEffect(() => {
+    setIsExpanded(hasInputFocus || isMouseOver);
+  }, [hasInputFocus, isMouseOver]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (collapseTimeout) {
+        clearTimeout(collapseTimeout);
+      }
+    };
+  }, [collapseTimeout]);
 
   // Show loading if checking session
   if (status === 'loading') {
@@ -64,6 +83,53 @@ const LoginCard = () => {
       setShowMessageState(false);
       setMessage('');
     }, 4000);
+  };
+
+  const handleMouseEnter = () => {
+    if (collapseTimeout) {
+      clearTimeout(collapseTimeout);
+      setCollapseTimeout(null);
+    }
+    setIsMouseOver(true);
+  };
+
+  const handleMouseLeave = () => {
+    // Only start collapse timer if no input has focus
+    if (!hasInputFocus) {
+      const timeout = setTimeout(() => {
+        setIsMouseOver(false);
+      }, 200);
+      setCollapseTimeout(timeout);
+    } else {
+      setIsMouseOver(false);
+    }
+  };
+
+  const handleInputFocus = () => {
+    setHasInputFocus(true);
+    if (collapseTimeout) {
+      clearTimeout(collapseTimeout);
+      setCollapseTimeout(null);
+    }
+  };
+
+  const handleInputBlur = (e: React.FocusEvent) => {
+    // Check if focus is moving to autocomplete or another input
+    setTimeout(() => {
+      const activeElement = document.activeElement;
+      const isStillInForm = e.currentTarget.contains(activeElement as Node);
+
+      if (!isStillInForm) {
+        setHasInputFocus(false);
+        // If mouse is also not over, start collapse
+        if (!isMouseOver) {
+          const timeout = setTimeout(() => {
+            setIsExpanded(false);
+          }, 100);
+          setCollapseTimeout(timeout);
+        }
+      }
+    }, 0);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +190,7 @@ const LoginCard = () => {
     setLoading(true);
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      
+
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -136,14 +202,14 @@ const LoginCard = () => {
       } else if (result?.ok) {
         // Success - NextAuth will handle the session
         showMessage('Login successful!');
-        
+
         // Get the updated session to determine redirect
         const response = await fetch('/api/auth/session');
         const sessionData = await response.json();
         const isAdmin = sessionData?.user?.role === 'admin';
         const defaultRedirect = isAdmin ? '/admin' : '/products';
         const redirect = urlParams.get('redirect') || defaultRedirect;
-        
+
         window.location.replace(redirect);
       }
     } catch (error) {
@@ -245,9 +311,9 @@ const LoginCard = () => {
   return (
     <div className={styles.container}>
       <div
-        className={`${styles.box} ${isHovered ? styles.hovered : ''}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className={`${styles.box} ${isExpanded ? styles.hovered : ''}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div className={styles.gradientContainer}>
           <div className={`${styles.gradientBox} ${styles.gradientBox1}`}></div>
@@ -263,8 +329,12 @@ const LoginCard = () => {
         </div>
 
         <div className={styles.form}>
-          <h2 className={isHovered ? '' : styles.scaled}>
-            {showOTPVerification ? 'VERIFY OTP' : isRegistering ? 'REGISTER' : 'LOGIN'}
+          <h2 className={isExpanded ? '' : styles.scaled}>
+            {showOTPVerification
+              ? 'VERIFY OTP'
+              : isRegistering
+              ? 'REGISTER'
+              : 'LOGIN'}
           </h2>
 
           <div className={styles.inputContainer}>
@@ -272,15 +342,26 @@ const LoginCard = () => {
               /* OTP Verification Form */
               <form onSubmit={handleVerifyOTP}>
                 <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-                  <p style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
-                    Please enter the 6-digit OTP code sent to:<br />
+                  <p
+                    style={{
+                      color: '#666',
+                      fontSize: '14px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    Please enter the 6-digit OTP code sent to:
+                    <br />
                     <strong>{userEmail}</strong>
                   </p>
                   <input
                     type='text'
                     placeholder='Enter 6-digit OTP'
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) =>
+                      setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -303,11 +384,15 @@ const LoginCard = () => {
                     padding: '12px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: (loading || otpCode.length !== 6) ? '#ccc' : '#28a745',
+                    background:
+                      loading || otpCode.length !== 6 ? '#ccc' : '#28a745',
                     color: 'white',
                     fontSize: '16px',
                     fontWeight: 'bold',
-                    cursor: (loading || otpCode.length !== 6) ? 'not-allowed' : 'pointer',
+                    cursor:
+                      loading || otpCode.length !== 6
+                        ? 'not-allowed'
+                        : 'pointer',
                     marginBottom: '16px',
                   }}
                 >
@@ -366,6 +451,8 @@ const LoginCard = () => {
                         placeholder='Full Name'
                         value={formData.name}
                         onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
                         style={{
                           width: '100%',
                           padding: '12px',
@@ -385,6 +472,8 @@ const LoginCard = () => {
                       placeholder='Email'
                       value={formData.email}
                       onChange={handleInputChange}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       style={{
                         width: '100%',
                         padding: '12px',
@@ -403,6 +492,8 @@ const LoginCard = () => {
                       placeholder='Password'
                       value={formData.password}
                       onChange={handleInputChange}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       style={{
                         width: '100%',
                         padding: '12px',

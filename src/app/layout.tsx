@@ -4,6 +4,8 @@ import './globals.css';
 import { Providers } from '@/components/Providers';
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
 import Navbar from '@/components/Navbar';
+import { ToastContainer } from '@/components/Toast';
+import { TestToastButton } from '@/components/TestToastButton';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -24,6 +26,8 @@ export default async function RootLayout({
           <Providers>
             <Navbar />
             <main>{children}</main>
+            <ToastContainer />
+            <TestToastButton />
           </Providers>
         </SessionProviderWrapper>
       </body>
