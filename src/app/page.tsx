@@ -9,7 +9,7 @@ export default async function Home() {
     <div className='container mx-auto px-4 py-8'>
       <div className='text-center'>
         <h1 className='text-4xl font-bold text-gray-800 mb-6'>
-          Welcome to Cat Food Store
+          Welcome to Aing Meong Shop
         </h1>
         <p className='text-xl text-gray-600 mb-8 max-w-2xl mx-auto'>
           A comprehensive cat food management system built with Next.js, Redux,

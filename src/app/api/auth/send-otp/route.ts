@@ -32,16 +32,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user by email
-    const result = await prisma.$queryRaw`
-      SELECT id, name, email, "isVerified"
-      FROM users
-      WHERE email = ${email}
-      LIMIT 1
-    `;
-
-    const users = Array.isArray(result) ? result : [result];
-    const user = users[0];
+    // Find user by email in auth_users table
+    const user = await prisma.authUser.findUnique({
+      where: { email: email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isVerified: true
+      }
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -61,12 +61,14 @@ export async function POST(request: NextRequest) {
     const otpCode = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Update user with new OTP
-    await prisma.$queryRaw`
-      UPDATE users 
-      SET "otpCode" = ${otpCode}, "otpExpiry" = ${otpExpiry}, "updatedAt" = NOW()
-      WHERE id = ${user.id}
-    `;
+    // Update user with new OTP in auth_users table
+    await prisma.authUser.update({
+      where: { id: user.id },
+      data: {
+        otpCode,
+        otpExpiry
+      }
+    });
 
     // Send OTP email
     try {
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
       const mailOptions = {
         from: 'aingmeongshop@gmail.com',
         to: email,
-        subject: 'Your New OTP Code - Cat Food Store',
+        subject: 'Your New OTP Code - Aing Meong Shop',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333; text-align: center;">New OTP Code</h2>
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
             
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px; text-align: center;">
-              This is an automated email from Cat Food Store. Please do not reply to this email.
+              This is an automated email from Aing Meong Shop. Please do not reply to this email.
             </p>
           </div>
         `

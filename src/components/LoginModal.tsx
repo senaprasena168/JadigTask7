@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn, useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { SpinLightContainer } from './spinlightcontainermodule';
 import styles from './LoginModal.module.css';
 
 interface LoginModalProps {
@@ -11,16 +12,17 @@ interface LoginModalProps {
   onLoginSuccess?: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess }) => {
+const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onLoginSuccess,
+}) => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showMessageState, setShowMessageState] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [hasInputFocus, setHasInputFocus] = useState(false);
-  const [isMouseOver, setIsMouseOver] = useState(false);
-  const [collapseTimeout, setCollapseTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [otpCode, setOtpCode] = useState('');
@@ -43,26 +45,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
     }
   }, [session, status, isOpen, onClose, onLoginSuccess]);
 
-  // Expand when either focused or hovered
-  useEffect(() => {
-    setIsExpanded(hasInputFocus || isMouseOver);
-  }, [hasInputFocus, isMouseOver]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (collapseTimeout) {
-        clearTimeout(collapseTimeout);
-      }
-    };
-  }, [collapseTimeout]);
-
   // Reset states when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setIsExpanded(false);
-      setHasInputFocus(false);
-      setIsMouseOver(false);
       setIsRegistering(false);
       setShowOTPVerification(false);
       setOtpCode('');
@@ -70,12 +56,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
       setFormData({ name: '', email: '', password: '' });
       setMessage('');
       setShowMessageState(false);
-      if (collapseTimeout) {
-        clearTimeout(collapseTimeout);
-        setCollapseTimeout(null);
-      }
     }
-  }, [isOpen, collapseTimeout]);
+  }, [isOpen]);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -119,53 +101,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
       setShowMessageState(false);
       setMessage('');
     }, 4000);
-  };
-
-  const handleMouseEnter = () => {
-    if (collapseTimeout) {
-      clearTimeout(collapseTimeout);
-      setCollapseTimeout(null);
-    }
-    setIsMouseOver(true);
-  };
-
-  const handleMouseLeave = () => {
-    // Only start collapse timer if no input has focus
-    if (!hasInputFocus) {
-      const timeout = setTimeout(() => {
-        setIsMouseOver(false);
-      }, 200);
-      setCollapseTimeout(timeout);
-    } else {
-      setIsMouseOver(false);
-    }
-  };
-
-  const handleInputFocus = () => {
-    setHasInputFocus(true);
-    if (collapseTimeout) {
-      clearTimeout(collapseTimeout);
-      setCollapseTimeout(null);
-    }
-  };
-
-  const handleInputBlur = (e: React.FocusEvent) => {
-    // Check if focus is moving to autocomplete or another input
-    setTimeout(() => {
-      const activeElement = document.activeElement;
-      const isStillInForm = e.currentTarget.contains(activeElement as Node);
-
-      if (!isStillInForm) {
-        setHasInputFocus(false);
-        // If mouse is also not over, start collapse
-        if (!isMouseOver) {
-          const timeout = setTimeout(() => {
-            setIsExpanded(false);
-          }, 100);
-          setCollapseTimeout(timeout);
-        }
-      }
-    }, 0);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,25 +160,35 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
 
     setLoading(true);
     try {
-      const result = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
+      // Use custom credentials API for hybrid authentication
+      const response = await fetch('/api/auth/custom-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
       });
 
-      if (result?.error) {
-        showMessage('Invalid email or password');
-      } else if (result?.ok) {
-        // Success - NextAuth will handle the session
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         showMessage('Login successful!');
         
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Redirect based on user role
+        const redirectUrl = data.user.role === 'admin' ? '/admin' : '/products';
+        window.location.href = redirectUrl;
+
         // Close modal and call success callback
-        setTimeout(() => {
-          onClose();
-          if (onLoginSuccess) {
-            onLoginSuccess();
-          }
-        }, 1000);
+        onClose();
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
+      } else {
+        showMessage(data.error || 'Login failed');
       }
     } catch (error) {
       showMessage('Login failed. Please try again.');
@@ -255,20 +200,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const result = await signIn('google', {
-        redirect: false,
+      // For OAuth, let NextAuth handle the redirect automatically
+      await signIn('google', {
+        callbackUrl: window.location.origin + '/products', // Default redirect after OAuth
       });
-
-      if (result?.url) {
-        // For OAuth, we need to redirect to complete the flow
-        window.location.href = result.url;
-      } else if (result?.ok) {
-        // Success - close modal
-        onClose();
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        }
-      }
     } catch (error) {
       showMessage('Google sign-in failed. Please try again.');
       setLoading(false);
@@ -348,35 +283,44 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
       <div className={styles.modalContent}>
-        <button className={styles.closeButton} onClick={onClose} aria-label="Close modal">
+        <button
+          className={styles.closeButton}
+          onClick={onClose}
+          aria-label='Close modal'
+        >
           ×
         </button>
-        
-        <div className={styles.container}>
-          <div
-            className={`${styles.box} ${isExpanded ? styles.hovered : ''}`}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            <div className={styles.gradientContainer}>
-              <div className={`${styles.gradientBox} ${styles.gradientBox1}`}></div>
-              <div className={`${styles.gradientBox} ${styles.gradientBox2}`}></div>
-            </div>
-            <div className={styles.redGradientContainer}>
-              <div className={`${styles.redGradientBox} ${styles.redGradientBox1}`}></div>
-              <div className={`${styles.redGradientBox} ${styles.redGradientBox2}`}></div>
-            </div>
 
-            <div className={styles.form}>
-              <h2 className={isExpanded ? '' : styles.scaled}>
-                {showOTPVerification
-                  ? 'VERIFY OTP'
-                  : isRegistering
-                  ? 'REGISTER'
-                  : 'LOGIN'}
-              </h2>
+        <SpinLightContainer
+          width={300}
+          height={80}
+          expandedWidth={380}
+          expandedHeight={500}
+          expandOnHover={true}
+          onHoverChange={setIsExpanded}
+        >
+          <div style={{ color: 'white', padding: '20px', width: '100%' }}>
+            <h2 style={{ 
+              textAlign: 'center', 
+              marginBottom: isExpanded ? '20px' : '0',
+              fontSize: '1.5em',
+              fontWeight: '600',
+              letterSpacing: '2px'
+            }}>
+              {showOTPVerification
+                ? 'VERIFY OTP'
+                : isRegistering
+                ? 'REGISTER'
+                : 'LOGIN'}
+            </h2>
 
-              <div className={styles.inputContainer}>
+            {isExpanded && (
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '15px',
+                animation: 'fadeIn 0.5s ease-in-out'
+              }}>
                 {showOTPVerification ? (
                   /* OTP Verification Form */
                   <form onSubmit={handleVerifyOTP}>
@@ -397,10 +341,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                         placeholder='Enter 6-digit OTP'
                         value={otpCode}
                         onChange={(e) =>
-                          setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                          setOtpCode(
+                            e.target.value.replace(/\D/g, '').slice(0, 6)
+                          )
                         }
-                        onFocus={handleInputFocus}
-                        onBlur={handleInputBlur}
                         style={{
                           width: '100%',
                           padding: '12px',
@@ -483,67 +427,67 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                       }
                     >
                       {isRegistering && (
-                        <div style={{ marginBottom: '16px' }}>
-                          <input
-                            type='text'
-                            name='name'
-                            placeholder='Full Name'
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            onFocus={handleInputFocus}
-                            onBlur={handleInputBlur}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              borderRadius: '8px',
-                              border: '1px solid #ddd',
-                              fontSize: '16px',
-                            }}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
+                        <input
+                          type='text'
+                          name='name'
+                          placeholder='Full Name'
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            fontSize: '16px',
+                            marginBottom: '15px',
+                            backgroundColor: '#ffffff',
+                            color: '#333333',
+                            opacity: '1',
+                          }}
+                          disabled={loading}
+                          required
+                        />
                       )}
-                      <div style={{ marginBottom: '16px' }}>
-                        <input
-                          type='email'
-                          name='email'
-                          placeholder='Email'
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          onFocus={handleInputFocus}
-                          onBlur={handleInputBlur}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddd',
-                            fontSize: '16px',
-                          }}
-                          disabled={loading}
-                          required
-                        />
-                      </div>
-                      <div style={{ marginBottom: '16px' }}>
-                        <input
-                          type='password'
-                          name='password'
-                          placeholder='Password'
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          onFocus={handleInputFocus}
-                          onBlur={handleInputBlur}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddd',
-                            fontSize: '16px',
-                          }}
-                          disabled={loading}
-                          required
-                        />
-                      </div>
+                      <input
+                        type='email'
+                        name='email'
+                        placeholder='Email'
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd',
+                          fontSize: '16px',
+                          marginBottom: '15px',
+                          backgroundColor: '#ffffff',
+                          color: '#333333',
+                          opacity: '1',
+                        }}
+                        disabled={loading}
+                        required
+                      />
+                      <input
+                        type='password'
+                        name='password'
+                        placeholder='Password'
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd',
+                          fontSize: '16px',
+                          marginBottom: '15px',
+                          backgroundColor: '#ffffff',
+                          color: '#333333',
+                          opacity: '1',
+                        }}
+                        disabled={loading}
+                        required
+                      />
                       <button
                         type='submit'
                         disabled={loading}
@@ -580,7 +524,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                           type='button'
                           onClick={handleGoogleSignIn}
                           disabled={loading}
-                          className={`${styles.button} ${styles.googleButton}`}
                           style={{
                             background: loading
                               ? '#ccc'
@@ -629,7 +572,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                       </>
                     )}
 
-                    <div className={styles.links}>
+                    <div style={{ textAlign: 'center' }}>
                       <button
                         type='button'
                         onClick={() => setIsRegistering(!isRegistering)}
@@ -649,13 +592,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                   </>
                 )}
               </div>
-            </div>
+            )}
           </div>
-          <div
-            className={`${styles.message} ${showMessageState ? styles.show : ''}`}
-          >
-            {message}
-          </div>
+        </SpinLightContainer>
+
+        <div
+          className={`${styles.message} ${
+            showMessageState ? styles.show : ''
+          }`}
+        >
+          {message}
         </div>
       </div>
     </div>

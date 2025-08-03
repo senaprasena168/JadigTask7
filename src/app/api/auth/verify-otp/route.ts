@@ -13,16 +13,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user by email with OTP details
-    const result = await prisma.$queryRaw`
-      SELECT id, name, email, "isVerified", "otpCode", "otpExpiry"
-      FROM users
-      WHERE email = ${email}
-      LIMIT 1
-    `;
-
-    const users = Array.isArray(result) ? result : [result];
-    const user = users[0];
+    // Find user by email with OTP details in auth_users table
+    const user = await prisma.authUser.findUnique({
+      where: { email: email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isVerified: true,
+        otpCode: true,
+        otpExpiry: true
+      }
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -64,12 +66,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // OTP is valid - verify the user
-    await prisma.$queryRaw`
-      UPDATE users
-      SET "isVerified" = true, "otpCode" = NULL, "otpExpiry" = NULL, "updatedAt" = NOW()
-      WHERE id = ${user.id}
-    `;
+    // OTP is valid - verify the user in auth_users table
+    await prisma.authUser.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        otpCode: null,
+        otpExpiry: null
+      }
+    });
 
     return NextResponse.json({
       message: 'Email verified successfully! You can now log in.',

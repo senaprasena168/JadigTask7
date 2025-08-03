@@ -14,11 +14,11 @@ function createTransporter() {
     service: 'gmail',
     auth: {
       user: 'aingmeongshop@gmail.com',
-      pass: process.env.EMAIL_APP_PASSWORD || 'placeholder-password' // Will be replaced with actual app password
+      pass: process.env.EMAIL_APP_PASSWORD || 'placeholder-password', // Will be replaced with actual app password
     },
     tls: {
-      rejectUnauthorized: false
-    }
+      rejectUnauthorized: false,
+    },
   });
 }
 
@@ -34,16 +34,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists using raw SQL
-    const existingUserResult = await prisma.$queryRaw`
-      SELECT id, email
-      FROM users
-      WHERE email = ${email}
-      LIMIT 1
-    `;
-    
-    const existingUsers = Array.isArray(existingUserResult) ? existingUserResult : [existingUserResult];
-    if (existingUsers.length > 0 && existingUsers[0]) {
+    // Check if user already exists in auth_users table
+    const existingUser = await prisma.authUser.findUnique({
+      where: { email: email }
+    });
+
+    if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 409 }
@@ -58,26 +54,31 @@ export async function POST(request: NextRequest) {
     const otpCode = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Create user with unverified status and OTP using raw SQL
-    const result = await prisma.$queryRaw`
-      INSERT INTO users (id, name, email, password, "isVerified", "isAdmin", provider, "otpCode", "otpExpiry", "createdAt", "updatedAt")
-      VALUES (gen_random_uuid(), ${name}, ${email}, ${hashedPassword}, false, false, 'email', ${otpCode}, ${otpExpiry}, NOW(), NOW())
-      RETURNING id, name, email, "isVerified", "isAdmin"
-    `;
-    
-    const newUser = Array.isArray(result) ? result[0] : result;
+    // Create user with unverified status and OTP in auth_users table
+    const newUser = await prisma.authUser.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        isVerified: false,
+        isAdmin: email === 'aingmeongshop@gmail.com', // Only specific email gets admin
+        provider: 'email',
+        otpCode,
+        otpExpiry
+      }
+    });
 
     // Send OTP email
     try {
       const transporter = createTransporter();
-      
+
       const mailOptions = {
         from: 'aingmeongshop@gmail.com',
         to: email,
-        subject: 'Verify Your Cat Food Store Account - OTP Code',
+        subject: 'Verify Your Aing Meong Shop Account - OTP Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #333; text-align: center;">Welcome to Cat Food Store!</h2>
+            <h2 style="color: #333; text-align: center;">Welcome to Aing Meong Shop!/h2>
             <p>Hello ${name},</p>
             <p>Thank you for registering with us. To complete your registration, please verify your email address using the OTP code below:</p>
             
@@ -91,34 +92,39 @@ export async function POST(request: NextRequest) {
             
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px; text-align: center;">
-              This is an automated email from Cat Food Store. Please do not reply to this email.
+              This is an automated email from Aing Meong Shop. Please do not reply to this email.
             </p>
           </div>
-        `
+        `,
       };
 
       await transporter.sendMail(mailOptions);
-      
-      return NextResponse.json({
-        message: 'Registration successful! Please check your email for the OTP verification code.',
-        userId: newUser.id,
-        email: newUser.email,
-        requiresOTP: true
-      }, { status: 201 });
 
+      return NextResponse.json(
+        {
+          message:
+            'Registration successful! Please check your email for the OTP verification code.',
+          userId: newUser.id,
+          email: newUser.email,
+          requiresOTP: true,
+        },
+        { status: 201 }
+      );
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
-      
-      // If email fails, delete the user and return error
-      await prisma.$queryRaw`
-        DELETE FROM users WHERE id = ${newUser.id}
-      `;
-      
-      return NextResponse.json({
-        error: 'Failed to send verification email. Please try again.'
-      }, { status: 500 });
-    }
 
+      // If email fails, delete the user and return error
+      await prisma.authUser.delete({
+        where: { id: newUser.id }
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Failed to send verification email. Please try again.',
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(

@@ -198,7 +198,11 @@
 .gradientBox1 {
   /* Renamed from .gradient-box-1 */
   position: relative;
-  background: linear-gradient(to right, rgba(0, 150, 255, 0.8), rgba(0, 150, 255, 0.1));
+  background: linear-gradient(
+    to right,
+    rgba(0, 150, 255, 0.8),
+    rgba(0, 150, 255, 0.1)
+  );
 }
 
 .gradientBox1::before {
@@ -208,7 +212,11 @@
 .gradientBox2 {
   /* Renamed from .gradient-box-2 */
   position: relative;
-  background: linear-gradient(to right, rgba(0, 150, 255, 0.1), rgba(0, 150, 255, 0.8));
+  background: linear-gradient(
+    to right,
+    rgba(0, 150, 255, 0.1),
+    rgba(0, 150, 255, 0.8)
+  );
 }
 
 .gradientBox2::before {
@@ -249,7 +257,11 @@
 .redGradientBox1 {
   /* Renamed from .red-gradient-box-1 */
   position: relative;
-  background: linear-gradient(to right, rgba(255, 50, 150, 0.8), rgba(255, 50, 150, 0.1));
+  background: linear-gradient(
+    to right,
+    rgba(255, 50, 150, 0.8),
+    rgba(255, 50, 150, 0.1)
+  );
 }
 
 .redGradientBox1::before {
@@ -259,7 +271,11 @@
 .redGradientBox2 {
   /* Renamed from .red-gradient-box-2 */
   position: relative;
-  background: linear-gradient(to right, rgba(255, 50, 150, 0.1), rgba(255, 50, 150, 0.8));
+  background: linear-gradient(
+    to right,
+    rgba(255, 50, 150, 0.1),
+    rgba(255, 50, 150, 0.8)
+  );
 }
 
 .redGradientBox2::before {
@@ -452,22 +468,42 @@
   transform: translateX(-50%) translateY(0);
 }
 
+/* Fix for inline styled inputs in the modal - override inline styles */
+.form input[style] {
+  color: #333 !important;
+  background: #fff !important;
+}
+
+.form input[type="text"],
+.form input[type="email"],
+.form input[type="password"] {
+  color: #333 !important;
+  background: #fff !important;
+}
+
+/* Ensure password field text is visible */
+.form input[type="password"] {
+  color: #333 !important;
+  background: #fff !important;
+  -webkit-text-security: disc !important;
+}
+
 /* Responsive adjustments for modal */
 @media (max-width: 480px) {
   .modalContent {
     max-width: 95vw;
   }
-  
+
   .box {
     width: 280px;
   }
-  
+
   .box.hovered,
   .box:hover {
     width: 320px;
     height: 500px;
   }
-  
+
   .box.hovered .inputContainer,
   .box:hover .inputContainer {
     height: 400px;
@@ -478,13 +514,13 @@
   .box {
     width: 260px;
   }
-  
+
   .box.hovered,
   .box:hover {
     width: 300px;
     height: 480px;
   }
-  
+
   .box.hovered .inputContainer,
   .box:hover .inputContainer {
     height: 380px;

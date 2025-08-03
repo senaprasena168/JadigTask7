@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import clsx from 'clsx';
-import { Backdoor } from './Backdoor';
 import LoginModal from './LoginModal';
 import { useLoginModal } from '../hooks/useLoginModal';
 
@@ -31,8 +30,8 @@ export default function Navbar() {
   };
 
   const handleLoginSuccess = () => {
-    // Refresh the page to update the session state
-    window.location.reload();
+    // No need to reload - let NextAuth handle session updates naturally
+    // The useSession hook will automatically update when the session changes
   };
 
   // Check if user is authenticated and is admin
@@ -52,7 +51,7 @@ export default function Navbar() {
       <div className='max-w-6xl mx-auto px-4'>
         <div className='flex justify-between items-center h-16'>
           <div className='flex items-center space-x-3'>
-            {/* Profile picture with Backdoor overlay */}
+            {/* Profile picture */}
             <div className='w-10 h-10 rounded-full overflow-hidden relative hover:ring-2 hover:ring-yellow-400 transition-all duration-200'>
               <Image
                 src='/profile-cat.png'
@@ -61,15 +60,13 @@ export default function Navbar() {
                 height={40}
                 className='w-full h-full object-cover hover:scale-110 transition-transform duration-200'
               />
-              {/* Backdoor component overlay - REMOVE BEFORE PRODUCTION */}
-              <Backdoor />
             </div>
 
             <Link
               href='/'
               className='text-xl font-bold hover:text-blue-200 transition-colors'
             >
-              Cat Food Store
+              Aing Meong Shop
             </Link>
           </div>
 

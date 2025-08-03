@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  name: 'Cat Food Store',
+  name: 'Aing Meong Shop',
   description: 'Premium cat food and accessories for your feline friends',
   version: '1.0.0',
 } as const;

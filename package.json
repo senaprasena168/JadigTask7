@@ -1,7 +1,7 @@
 {
   "name": "cat-food-store",
   "version": "1.0.0",
-  "description": "Premium cat food store management system",
+  "description": "Cat food store management system",
   "private": true,
   "scripts": {
     "dev": "npx kill-port 3000 && next dev -p 3000",

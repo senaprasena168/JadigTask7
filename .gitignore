@@ -6,11 +6,10 @@
 .env.production.local
 
 # Test files and scripts (may contain secrets)
-tests-and-scripts/
-test-scripts/
 
 #external-scripts, exported/ imported modules, non essential files
 external-scripts
+test-scripts
 
 # Dependencies
 node_modules
@@ -132,4 +131,4 @@ public/uploads/*
 /src/generated/prisma
 
 #notes
-notes
+# notes

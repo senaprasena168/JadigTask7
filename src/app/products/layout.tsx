@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Cat Food Products | Cat Food Store',
+  title: 'Cat Food Products | Aing Meong Shop',
   description: 'Browse our premium selection of cat food and accessories for your feline friends.',
 };
 

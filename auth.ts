@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { CustomPrismaAdapter } from './src/lib/auth-adapter';
 import { prisma } from './src/lib/prisma';
 import bcrypt from 'bcryptjs';
 
@@ -28,12 +28,20 @@ declare module '@auth/core/jwt' {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: process.env.NODE_ENV === 'development',
   trustHost: true,
-  // Temporarily disable adapter until tables are created
-  // adapter: PrismaAdapter(prisma),
+  secret: process.env.AUTH_SECRET,
+  adapter: CustomPrismaAdapter(prisma),
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+          select_account: true,
+        },
+      },
     }),
     Credentials({
       name: 'credentials',
@@ -47,27 +55,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          // Use raw SQL to query user with actual database structure
-          const users = await prisma.$queryRaw<
-            Array<{
-              id: string;
-              name: string | null;
-              email: string;
-              password: string | null;
-              isAdmin: boolean;
-            }>
-          >`
-            SELECT id, name, email, password, "isAdmin"
-            FROM users
-            WHERE email = ${credentials.email as string}
-            LIMIT 1
-          `;
+          // Only use the new auth_users table
+          const user = await prisma.authUser.findUnique({
+            where: { email: credentials.email as string }
+          });
 
-          const user = users[0];
           if (!user || !user.password) {
             return null;
           }
 
+          // Check if user is verified
+          if (!user.isVerified) {
+            throw new Error('Please verify your email before logging in');
+          }
+
+          // Validate password
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
             user.password
@@ -94,149 +96,65 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'database',
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === 'google') {
+      // For credentials login, ensure user exists in auth_users table
+      if (account?.provider === 'credentials' && user?.email) {
         try {
-          // Check if user exists in database using raw SQL
-          const existingUsers = await prisma.$queryRaw<
-            Array<{
-              id: string;
-              email: string;
-            }>
-          >`
-            SELECT id, email FROM users WHERE email = ${user.email!} LIMIT 1
-          `;
+          // Check if user exists in auth_users table
+          let authUser = await prisma.authUser.findUnique({
+            where: { email: user.email }
+          });
 
-          if (existingUsers.length === 0) {
-            // Create new user with regular user role (not admin) using raw SQL
-            await prisma.$executeRaw`
-              INSERT INTO users (id, name, email, password, "isAdmin", "isVerified", provider, "createdAt", "updatedAt")
-              VALUES (gen_random_uuid(), ${user.name!}, ${user.email!}, NULL, false, true, 'google', NOW(), NOW())
-            `;
+          // If user doesn't exist in auth_users, create them
+          if (!authUser) {
+            authUser = await prisma.authUser.create({
+              data: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                isAdmin: user.email === 'aingmeongshop@gmail.com',
+                isVerified: true,
+                provider: 'email'
+              }
+            });
           }
+
+          // Update user object with database user info
+          user.id = authUser.id;
+          user.email = authUser.email;
+          user.name = authUser.name;
         } catch (error) {
-          console.error('Error during Google sign in:', error);
+          console.error('Error in signIn callback:', error);
           return false;
         }
       }
-
-      // --- NEW LOGIC FOR SERVER-SIDE REDIRECT FOR OAuth ---
-      // This ensures that after a successful OAuth login, the browser history
-      // entry for the OAuth callback is replaced by the appropriate dashboard.
-      if (account && user && account.type === 'oauth') {
-        // Check if user should be admin (only specific email)
-        const isSpecificAdmin = user.email === 'aingmeongshop@gmail.com';
-        const dashboardUrl = isSpecificAdmin ? '/admin' : '/products'; // Redirect normal users to products
-        console.log(`[Auth.js] Redirecting OAuth user to: ${dashboardUrl}`);
-        // For Auth.js v5, we return a redirect URL string instead of Response object
-        return dashboardUrl;
-      }
-
-      // For Credentials sign-in, or if the above OAuth condition isn't met,
-      // allow Auth.js's default behavior, which your client-side `redirect: false` expects.
       return true;
     },
-    async jwt({ token, user, account, trigger }) {
-      // Handle account switching by clearing old token data
-      if (trigger === 'signIn') {
-        // Clear existing token data for fresh sign-in
-        if (account?.provider === 'google') {
-          try {
-            // Get fresh user data from database using raw SQL
-            const dbUsers = await prisma.$queryRaw<
-              Array<{
-                id: string;
-                name: string | null;
-                email: string;
-                isAdmin: boolean;
-              }>
-            >`
-              SELECT id, name, email, "isAdmin" FROM users WHERE email = ${user?.email!} LIMIT 1
-            `;
+    async session({ session, user }) {
+      if (user && session.user) {
+        session.user.id = user.id;
+        session.user.email = user.email;
+        session.user.name = user.name;
 
-            if (dbUsers.length > 0) {
-              const dbUser = dbUsers[0];
-              // Only grant admin privileges to specific email for OAuth users
-              const isSpecificAdmin =
-                dbUser.email === 'aingmeongshop@gmail.com';
-
-              // Create a fresh token with new user data
-              return {
-                ...token,
-                role: dbUser.isAdmin && isSpecificAdmin ? 'admin' : 'user',
-                id: dbUser.id,
-                email: dbUser.email,
-                name: dbUser.name,
-                sub: dbUser.id,
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching user in JWT callback:', error);
-            // Don't fail the entire auth process, use default values
-            // Only grant admin privileges to specific email, default to user for OAuth
-            const isSpecificAdmin = user?.email === 'aingmeongshop@gmail.com';
-            return {
-              ...token,
-              role: isSpecificAdmin ? 'admin' : 'user',
-              id: user?.id || token.sub,
-              email: user?.email,
-              name: user?.name,
-            };
-          }
-        } else if (user) {
-          // For credentials login
-          return {
-            ...token,
-            role: user.role,
-            id: user.id,
-            email: user.email,
-            name: user.name,
-          };
-        }
-      } else if (account?.provider === 'google' && token.email) {
-        try {
-          // Get user from database using raw SQL
-          const dbUsers = await prisma.$queryRaw<
-            Array<{
-              id: string;
-              isAdmin: boolean;
-            }>
-          >`
-            SELECT id, "isAdmin" FROM users WHERE email = ${token.email} LIMIT 1
-          `;
-
-          if (dbUsers.length > 0) {
-            const dbUser = dbUsers[0];
-            // Only grant admin privileges to specific email
-            const isSpecificAdmin = token.email === 'aingmeongshop@gmail.com';
-            token.role = dbUser.isAdmin && isSpecificAdmin ? 'admin' : 'user';
-            token.id = dbUser.id;
-          }
-        } catch (error) {
-          console.error('Error fetching user in JWT callback:', error);
-          // Only grant admin privileges to specific email, default to user for OAuth
-          const isSpecificAdmin = token.email === 'aingmeongshop@gmail.com';
-          token.role = isSpecificAdmin ? 'admin' : 'user';
-        }
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
+        // Set role based on isAdmin field from database and specific email check
+        const isSpecificAdmin = user.email === 'aingmeongshop@gmail.com';
+        const isAdmin = (user as any).isAdmin && isSpecificAdmin;
+        session.user.role = isAdmin ? 'admin' : 'user';
+        
+        // Debug logging
+        console.log('Session callback - user:', {
+          id: user.id,
+          email: user.email,
+          isAdmin: (user as any).isAdmin,
+          isSpecificAdmin,
+          finalRole: session.user.role
+        });
       }
       return session;
     },
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
   },
   events: {
     async signOut(message) {

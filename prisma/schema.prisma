@@ -8,25 +8,70 @@ datasource db {
 }
 
 model User {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String?
+  password   String?
+  image      String?
+  provider   String?
+  isAdmin    Boolean   @default(true)
+  isVerified Boolean   @default(false)
+  otpCode    String?
+  otpExpiry  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  category    String?
+  inStock     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
+// New comprehensive authentication system - separate from existing users table
+model AuthUser {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
+  emailVerified DateTime?
   image         String?
   password      String?
   provider      String?   @default("email")
   isAdmin       Boolean   @default(false)
   isVerified    Boolean   @default(true)
+  
+  // OTP fields for password reset/change
   otpCode       String?
   otpExpiry     DateTime?
+  
+  // Future expansion fields
+  photoUrl      String?   // Profile photo URL (optional)
+  phoneNumber   String?   // Phone number (optional)
+  resetOtp      String?   // OTP for password reset (optional)
+  resetOtpExpiry DateTime? // OTP expiry for password reset
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
+  
+  // NextAuth relations
+  accounts      AuthAccount[]
+  sessions      AuthSession[]
 
-  @@map("users")
+  @@map("auth_users")
 }
 
-model Account {
+// NextAuth.js Account table for OAuth providers
+model AuthAccount {
   id                String  @id @default(cuid())
   userId            String
   type              String
@@ -40,41 +85,29 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@map("accounts")
+  @@map("auth_accounts")
 }
 
-model Session {
+// NextAuth.js Session table for database sessions
+model AuthSession {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("sessions")
+  @@map("auth_sessions")
 }
 
-model VerificationToken {
+// NextAuth.js VerificationToken table for email verification
+model AuthVerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verificationtokens")
-}
-
-model Product {
-  id          String    @id @default(uuid())
-  name        String    @db.VarChar(255)
-  price       Decimal   @db.Decimal(10, 2)
-  description String?
-  imageUrl    String?   @db.VarChar(500)
-  category    String?   @db.VarChar(100)
-  inStock     Boolean   @default(true)
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @default(now()) @updatedAt
-
-  @@map("products")
+  @@map("auth_verification_tokens")
 }

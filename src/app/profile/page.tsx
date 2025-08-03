@@ -18,7 +18,7 @@ export default function ProfilePage() {
                 <div className='w-28 h-28 bg-gray-200 rounded-full overflow-hidden'>
                   <Image
                     src='/wetkingcat.png'
-                    alt='Cat Food Store Profile'
+                    alt='              Aing Meong Shop Profile'
                     width={112}
                     height={112}
                     className='w-full h-full object-cover'
@@ -30,7 +30,7 @@ export default function ProfilePage() {
             <div className='text-center space-y-4'>
               <div>
                 <h2 className='text-2xl font-bold text-gray-800'>
-                  Cat Food Store
+                  Aing Meong Shop
                 </h2>
                 <p className='text-gray-600'>and Accessories</p>
               </div>
@@ -41,7 +41,7 @@ export default function ProfilePage() {
                     About
                   </h3>
                   <p className='text-gray-600'>
-                    Welcome to Cat Food Store, your one-stop destination for
+                    Welcome to Aing Meong Shop, your one-stop destination for
                     premium cat food and accessories. We are passionate about
                     providing the highest quality nutrition and products for
                     your beloved feline companions. Our carefully curated

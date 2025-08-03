@@ -19,11 +19,11 @@ export default function LogoutButton({ className, children }: LogoutButtonProps)
       });
       
       // Manual redirect to prevent back button issues
-      window.location.replace('/login');
+      window.location.replace('/');
     } catch (error) {
       console.error('Logout error:', error);
       // Fallback redirect
-      window.location.replace('/login');
+      window.location.replace('/');
     }
   };
 

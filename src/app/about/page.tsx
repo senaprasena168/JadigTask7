@@ -3,7 +3,7 @@ export default function AboutPage() {
     <div className='container mx-auto px-4 py-8'>
       <div className='max-w-4xl mx-auto'>
         <h1 className='text-4xl font-bold text-gray-800 mb-8 text-center'>
-          About Cat Food Store
+          About Aing Meong Shop
         </h1>
         
         <div className='bg-white rounded-lg shadow-md p-8 space-y-6'>
