@@ -345,6 +345,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                             e.target.value.replace(/\D/g, '').slice(0, 6)
                           )
                         }
+                        autoComplete='off'
                         style={{
                           width: '100%',
                           padding: '12px',
@@ -433,6 +434,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                           placeholder='Full Name'
                           value={formData.name}
                           onChange={handleInputChange}
+                          autoComplete='off'
                           style={{
                             width: '100%',
                             padding: '12px',
@@ -454,6 +456,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                         placeholder='Email'
                         value={formData.email}
                         onChange={handleInputChange}
+                        autoComplete='off'
                         style={{
                           width: '100%',
                           padding: '12px',
@@ -474,6 +477,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                         placeholder='Password'
                         value={formData.password}
                         onChange={handleInputChange}
+                        autoComplete='off'
                         style={{
                           width: '100%',
                           padding: '12px',

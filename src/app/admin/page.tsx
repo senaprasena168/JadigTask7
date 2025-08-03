@@ -8,6 +8,7 @@ import { formatRupiah } from '@/lib/currency';
 import Image from 'next/image';
 import clsx from 'clsx';
 import AdminProtection from '@/components/AdminProtection';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
 function AdminPageContent() {
   const dispatch = useAppDispatch();
@@ -18,27 +19,40 @@ function AdminPageContent() {
   const [imageError, setImageError] = useState<string>('');
   const [addingProduct, setAddingProduct] = useState(false);
   const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{id: string, name: string} | null>(null);
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+  const handleDeleteProduct = async (id: string, name: string) => {
+    setProductToDelete({ id, name });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
     
     try {
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await fetch(`/api/products/${productToDelete.id}`, {
         method: 'DELETE',
       });
       
       if (response.ok) {
         dispatch(fetchProducts()); // Refresh the list
+        (window as any).toast?.showSuccess('Successfully deleted a product');
       } else {
         (window as any).toast?.showError('Failed to delete product');
       }
     } catch (error) {
       (window as any).toast?.showError('Error deleting product');
     }
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setProductToDelete(null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -384,7 +398,7 @@ function AdminPageContent() {
                     </td>
                     <td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
                       <button
-                        onClick={() => handleDeleteProduct(product.id)}
+                        onClick={() => handleDeleteProduct(product.id, product.name)}
                         className='text-red-600 hover:text-red-900 transition-colors'
                       >
                         Delete
@@ -397,6 +411,13 @@ function AdminPageContent() {
           </div>
         )}
       </div>
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDeleteProduct}
+        productName={productToDelete?.name}
+      />
     </div>
   );
 }
