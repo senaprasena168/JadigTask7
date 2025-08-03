@@ -52,7 +52,7 @@ export default async function Home() {
             className='bg-orange-500 hover:bg-orange-600 text-white p-6 rounded-lg shadow-lg transition-colors'
           >
             <h3 className='text-xl font-semibold mb-2'>Profile</h3>
-            <p className='text-orange-100'>View your profile information</p>
+            <p className='text-orange-100'>View company profile information</p>
           </Link>
         </div>
       </div>

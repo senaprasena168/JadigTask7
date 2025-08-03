@@ -130,22 +130,19 @@ const LoginModal: React.FC<LoginModalProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        if (data.requiresOTP) {
-          (window as any).toast?.showInfo(data.message);
-          setUserEmail(data.email);
-          setShowOTPVerification(true);
-          setIsRegistering(false);
-          setFormData({ name: '', email: '', password: '' });
-        } else {
-          (window as any).toast?.showSuccess('Registration successful! You can now log in.');
-          setIsRegistering(false);
-          setFormData({ name: '', email: '', password: '' });
-        }
+        // Registration always requires OTP, so show the OTP message
+        (window as any).toast?.showInfo(data.message); // "Registration successful! Please check your email for the OTP verification code."
+        setUserEmail(data.email);
+        setShowOTPVerification(true);
+        setIsRegistering(false);
+        setFormData({ name: '', email: '', password: '' });
       } else {
         (window as any).toast?.showError(data.error || 'Registration failed');
       }
     } catch (error) {
-      (window as any).toast?.showError('Registration failed. Please try again.');
+      (window as any).toast?.showError(
+        'Registration failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -206,7 +203,9 @@ const LoginModal: React.FC<LoginModalProps> = ({
         callbackUrl: window.location.origin + '/products', // Default redirect after OAuth
       });
     } catch (error) {
-      (window as any).toast?.showError('Google sign-in failed. Please try again.');
+      (window as any).toast?.showError(
+        'Google sign-in failed. Please try again.'
+      );
       setLoading(false);
     }
   };
@@ -238,10 +237,14 @@ const LoginModal: React.FC<LoginModalProps> = ({
         setUserEmail('');
         // User can now login
       } else {
-        (window as any).toast?.showError(data.error || 'OTP verification failed');
+        (window as any).toast?.showError(
+          data.error || 'OTP verification failed'
+        );
       }
     } catch (error) {
-      (window as any).toast?.showError('OTP verification failed. Please try again.');
+      (window as any).toast?.showError(
+        'OTP verification failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -249,7 +252,9 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleResendOTP = async () => {
     if (!userEmail) {
-      (window as any).toast?.showError('Email not found. Please register again.');
+      (window as any).toast?.showError(
+        'Email not found. Please register again.'
+      );
       return;
     }
 
@@ -269,7 +274,9 @@ const LoginModal: React.FC<LoginModalProps> = ({
         (window as any).toast?.showError(data.error || 'Failed to resend OTP');
       }
     } catch (error) {
-      (window as any).toast?.showError('Failed to resend OTP. Please try again.');
+      (window as any).toast?.showError(
+        'Failed to resend OTP. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
