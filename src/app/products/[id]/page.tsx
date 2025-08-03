@@ -66,6 +66,11 @@ export default function ProductDetailPage() {
   const handleLoginSuccess = () => {
     // Login modal will close automatically
     // Session will update automatically via NextAuth
+    // Stay on the same product detail page - no redirect needed
+    // The page will automatically re-render with shopping functionality
+    
+    // Show success message
+    (window as any).toast?.showSuccess('Login successful! You can now purchase products.');
   };
 
   useEffect(() => {

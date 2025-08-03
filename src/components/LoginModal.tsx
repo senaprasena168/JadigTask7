@@ -176,9 +176,18 @@ const LoginModal: React.FC<LoginModalProps> = ({
         // Wait longer for toast to expand and be visible before redirecting
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        // Redirect based on user role
-        const redirectUrl = data.user.role === 'admin' ? '/admin' : '/products';
-        window.location.href = redirectUrl;
+        // For admin users, redirect to admin page
+        // For regular users, stay on current page or redirect to products if on admin page
+        if (data.user.role === 'admin') {
+          window.location.href = '/admin';
+        } else {
+          // Regular user - stay on current page unless on admin page
+          const currentPath = window.location.pathname;
+          if (currentPath.startsWith('/admin')) {
+            window.location.href = '/products';
+          }
+          // Otherwise stay on current page (no redirect needed)
+        }
 
         // Close modal and call success callback
         onClose();
@@ -198,9 +207,14 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      // For OAuth, let NextAuth handle the redirect automatically
+      // For OAuth, preserve current URL or redirect to products if on admin page
+      const currentPath = window.location.pathname;
+      const callbackUrl = currentPath.startsWith('/admin')
+        ? window.location.origin + '/products'
+        : window.location.href; // Stay on current page
+      
       await signIn('google', {
-        callbackUrl: window.location.origin + '/products', // Default redirect after OAuth
+        callbackUrl: callbackUrl,
       });
     } catch (error) {
       (window as any).toast?.showError(
