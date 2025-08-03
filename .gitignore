@@ -22,6 +22,9 @@ node_modules
 /test
 test/
 
+# Notes folder
+notes/
+
 # Next.js
 /.next/
 /out/
@@ -32,12 +35,22 @@ next-env.d.ts
 
 # Misc
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 *.pem
 
-# Debug
+# Debug and Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Vercel
 .vercel
@@ -51,24 +64,6 @@ yarn-error.log*
 *.swp
 *.swo
 *~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
 # Runtime data
 pids
@@ -129,6 +124,3 @@ public/uploads/*
 !public/uploads/.gitkeep
 
 /src/generated/prisma
-
-#notes
-# notes
