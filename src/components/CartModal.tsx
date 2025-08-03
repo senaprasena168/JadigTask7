@@ -3,10 +3,12 @@
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { closeCart, removeFromCart, updateQuantity, clearCart } from '@/lib/features/cart/cartSlice';
 import { formatRupiah } from '@/lib/currency';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 export default function CartModal() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { items, totalItems, totalPrice, isOpen } = useAppSelector((state) => state.cart);
 
   if (!isOpen) return null;
@@ -20,12 +22,11 @@ export default function CartModal() {
   };
 
   const handleCheckout = () => {
-    // Show success toast
-    (window as any).toast?.showSuccess('Checkout successful! Order placed.');
-    
-    // Clear cart
-    dispatch(clearCart());
+    // Close cart modal
     dispatch(closeCart());
+    
+    // Redirect to checkout page
+    router.push('/checkout');
   };
 
   return (
