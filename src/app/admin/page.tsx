@@ -13,7 +13,11 @@ import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
 function AdminPageContent() {
   const dispatch = useAppDispatch();
-  const { products = [], loading, error } = useAppSelector((state) => state.products);
+  const {
+    products = [],
+    loading,
+    error,
+  } = useAppSelector((state) => state.products);
   const [showAddForm, setShowAddForm] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -21,7 +25,10 @@ function AdminPageContent() {
   const [addingProduct, setAddingProduct] = useState(false);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<{id: string, name: string} | null>(null);
+  const [productToDelete, setProductToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -34,12 +41,12 @@ function AdminPageContent() {
 
   const confirmDeleteProduct = async () => {
     if (!productToDelete) return;
-    
+
     try {
       const response = await fetch(`/api/products/${productToDelete.id}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         dispatch(fetchProducts()); // Refresh the list
         (window as any).toast?.showSuccess('Successfully deleted a product');
@@ -59,7 +66,7 @@ function AdminPageContent() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setImageError('');
-    
+
     if (!file) {
       setImageFile(null);
       setImagePreview('');
@@ -83,7 +90,7 @@ function AdminPageContent() {
     }
 
     setImageFile(file);
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -92,7 +99,9 @@ function AdminPageContent() {
     reader.readAsDataURL(file);
   };
 
-  const uploadImage = async (file: File): Promise<{ url: string, imageId: string }> => {
+  const uploadImage = async (
+    file: File
+  ): Promise<{ url: string; imageId: string }> => {
     const formData = new FormData();
     formData.append('image', file);
 
@@ -116,10 +125,10 @@ function AdminPageContent() {
 
   const handleAddProduct = async (formData: FormData) => {
     if (addingProduct) return;
-    
+
     setAddingProduct(true);
     setFormErrors([]);
-    
+
     try {
       // Validate form data first
       const productData = {
@@ -130,15 +139,19 @@ function AdminPageContent() {
 
       // Inline validation
       const errors: string[] = [];
-      
+
       if (!productData.name || productData.name.trim().length === 0) {
         errors.push('Product name is required');
       }
-      
-      if (!productData.price || isNaN(parseFloat(productData.price)) || parseFloat(productData.price) <= 0) {
+
+      if (
+        !productData.price ||
+        isNaN(parseFloat(productData.price)) ||
+        parseFloat(productData.price) <= 0
+      ) {
         errors.push('Valid price is required');
       }
-      
+
       if (productData.price && parseFloat(productData.price) > 999999.99) {
         errors.push('Price cannot exceed Rp. 999.999,-');
       }
@@ -150,7 +163,7 @@ function AdminPageContent() {
 
       let imageUrl = formData.get('image') as string;
       let imageId = null;
-      
+
       if (imageFile) {
         const uploadResponse = await uploadImage(imageFile);
         imageUrl = uploadResponse.url;
@@ -172,7 +185,7 @@ function AdminPageContent() {
 
       const result = await response.json();
       console.log('Add product response:', result);
-      
+
       if (response.ok && result.success) {
         setShowAddForm(false);
         setImageFile(null);
@@ -182,7 +195,8 @@ function AdminPageContent() {
         dispatch(fetchProducts());
         (window as any).toast?.showSuccess('Product added successfully!');
       } else {
-        const errorMessage = result.message || result.error || 'Failed to add product';
+        const errorMessage =
+          result.message || result.error || 'Failed to add product';
         setFormErrors([errorMessage]);
         console.error('Add product error:', result);
       }
@@ -225,7 +239,7 @@ function AdminPageContent() {
       {showAddForm && (
         <div className='bg-white p-6 rounded-lg shadow-md mb-8'>
           <h2 className='text-xl font-semibold mb-4'>Add New Product</h2>
-          
+
           {formErrors.length > 0 && (
             <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>
               <ul className='list-disc list-inside'>
@@ -235,7 +249,7 @@ function AdminPageContent() {
               </ul>
             </div>
           )}
-          
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -284,7 +298,7 @@ function AdminPageContent() {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Product Image
               </label>
-              
+
               {/* File Upload */}
               <div className='mb-4'>
                 <input
@@ -294,7 +308,8 @@ function AdminPageContent() {
                   className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
                 <p className='text-xs text-gray-500 mt-1'>
-                  Image must be in JPG or PNG format with 1MB max size - Images will be stored in Supabase cloud storage.
+                  Image must be in JPG or PNG format with 1MB max size - Images
+                  will be stored in Supabase cloud storage.
                 </p>
                 {imageError && (
                   <p className='text-red-500 text-sm mt-1'>{imageError}</p>
@@ -316,7 +331,9 @@ function AdminPageContent() {
                       setImagePreview('');
                       setImageError('');
                       // Reset file input
-                      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                      const fileInput = document.querySelector(
+                        'input[type="file"]'
+                      ) as HTMLInputElement;
                       if (fileInput) fileInput.value = '';
                     }}
                     className='absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'
@@ -330,8 +347,8 @@ function AdminPageContent() {
               type='submit'
               disabled={addingProduct}
               className={`px-4 py-2 rounded-md text-white font-medium ${
-                addingProduct 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+                addingProduct
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-500 hover:bg-blue-600'
               }`}
             >
@@ -343,9 +360,11 @@ function AdminPageContent() {
 
       <div className='bg-white rounded-lg shadow-md overflow-hidden'>
         <div className='px-6 py-4 border-b border-gray-200'>
-          <h2 className='text-xl font-semibold text-gray-800'>Products ({products.length})</h2>
+          <h2 className='text-xl font-semibold text-gray-800'>
+            Products ({products.length})
+          </h2>
         </div>
-        
+
         {products.length === 0 ? (
           <div className='p-8 text-center text-gray-500'>
             No products found. Add some products to get started!
@@ -355,16 +374,16 @@ function AdminPageContent() {
             <table className='w-full'>
               <thead className='bg-gray-50'>
                 <tr>
-                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3'>
                     Product
                   </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  <th className='px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6'>
                     Price
                   </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  <th className='px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3'>
                     Description
                   </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  <th className='px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6'>
                     Actions
                   </th>
                 </tr>
@@ -385,8 +404,8 @@ function AdminPageContent() {
                             height={48}
                             className='w-full h-full object-cover hover:scale-105 transition-transform duration-200'
                             priority={false}
-                            placeholder="blur"
-                            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                            placeholder='blur'
+                            blurDataURL='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=='
                           />
                         </Link>
                         <div>
@@ -406,16 +425,18 @@ function AdminPageContent() {
                       {product.description || 'No description'}
                     </td>
                     <td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
-                      <div className='flex items-center space-x-4'>
+                      <div className='flex items-center space-x-2'>
                         <Link
                           href={`/admin/edit/${product.id}`}
-                          className='bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded border border-blue-500 hover:border-blue-600 transition-colors min-w-[60px] text-center'
+                          className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded border border-blue-500 hover:border-blue-600 transition-colors'
                         >
                           Edit
                         </Link>
                         <button
-                          onClick={() => handleDeleteProduct(product.id, product.name)}
-                          className='bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded border border-red-500 hover:border-red-600 transition-colors min-w-[60px]'
+                          onClick={() =>
+                            handleDeleteProduct(product.id, product.name)
+                          }
+                          className='bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded border border-red-500 hover:border-red-600 transition-colors'
                         >
                           Delete
                         </button>

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchProduct, clearCurrentProduct } from '@/lib/features/products/productsSlice';
+import { addToCart, openCart } from '@/lib/features/cart/cartSlice';
 import { formatRupiah } from '@/lib/currency';
 
 export default function ProductDetailPage() {
@@ -15,9 +16,47 @@ export default function ProductDetailPage() {
   const dispatch = useAppDispatch();
   const { data: session } = useSession();
   const { currentProduct: product, loading, error } = useAppSelector((state) => state.products);
+  const [quantity, setQuantity] = useState(1);
   
   // Check if user is admin
   const isAdmin = session?.user?.role === 'admin';
+
+  // Calculate total price
+  const totalPrice = product ? product.price * quantity : 0;
+
+  // Handle quantity changes
+  const handleQuantityChange = (change: number) => {
+    const newQuantity = quantity + change;
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  // Handle buy button click
+  const handleBuyClick = () => {
+    if (!product) return;
+    
+    const cartItem = {
+      productId: product.id,
+      productName: product.name,
+      productImage: product.imageUrl,
+      price: product.price,
+      quantity: quantity,
+      total: totalPrice
+    };
+
+    // Add to cart
+    dispatch(addToCart(cartItem));
+    
+    // Show success toast
+    (window as any).toast?.showSuccess(`Added ${quantity} ${product.name} to cart!`);
+    
+    // Open cart modal
+    dispatch(openCart());
+    
+    // Reset quantity to 1
+    setQuantity(1);
+  };
 
   useEffect(() => {
     if (params.id) {
@@ -83,7 +122,7 @@ export default function ProductDetailPage() {
           />
         </div>
 
-        <div className='space-y-6'>
+        <div className='space-y-6 relative'>
           <div>
             <h1 className='text-3xl font-bold text-gray-800 mb-2'>
               {product.name}
@@ -102,6 +141,35 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {/* Quantity Controls */}
+          <div className='flex items-center gap-4'>
+            <span className='text-lg font-medium text-gray-700'>Quantity:</span>
+            <div className='flex items-center gap-3'>
+              <button
+                onClick={() => handleQuantityChange(-1)}
+                className='w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors'
+                disabled={quantity <= 1}
+              >
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M20 12H4' />
+                </svg>
+              </button>
+              
+              <span className='text-2xl font-bold text-gray-800 min-w-[3rem] text-center'>
+                {quantity}
+              </span>
+              
+              <button
+                onClick={() => handleQuantityChange(1)}
+                className='w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-colors'
+              >
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6v6m0 0v6m0-6h6m-6 0H6' />
+                </svg>
+              </button>
+            </div>
+          </div>
+
           <div className='flex gap-4'>
             {isAdmin && (
               <Link
@@ -111,16 +179,29 @@ export default function ProductDetailPage() {
                 Edit Product
               </Link>
             )}
+          </div>
+
+          {/* Total Price and Buy Button - Bottom Right */}
+          <div className='absolute bottom-0 right-0 flex flex-col items-end gap-3'>
+            {/* Total Price */}
+            <div className='bg-white bg-opacity-90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg'>
+              <div className='text-sm text-gray-600'>Total</div>
+              <div className='text-xl font-bold text-green-600'>
+                {formatRupiah(totalPrice)}
+              </div>
+            </div>
+            
+            {/* Buy Button */}
             <button
-              onClick={() => router.back()}
-              className='bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors'
+              onClick={handleBuyClick}
+              className='bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg transition-colors font-semibold text-lg shadow-lg'
             >
-              Go Back
+              Buy Now
             </button>
           </div>
 
           {product.createdAt && (
-            <div className='text-sm text-gray-500'>
+            <div className='text-sm text-gray-500 pb-16'>
               <p>Created: {new Date(product.createdAt).toLocaleDateString()}</p>
               {product.updatedAt && product.updatedAt !== product.createdAt && (
                 <p>Updated: {new Date(product.updatedAt).toLocaleDateString()}</p>
