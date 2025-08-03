@@ -9,6 +9,8 @@ import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchProduct, clearCurrentProduct } from '@/lib/features/products/productsSlice';
 import { addToCart, openCart } from '@/lib/features/cart/cartSlice';
 import { formatRupiah } from '@/lib/currency';
+import LoginModal from '@/components/LoginModal';
+import { useLoginModal } from '@/hooks/useLoginModal';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -17,9 +19,12 @@ export default function ProductDetailPage() {
   const { data: session } = useSession();
   const { currentProduct: product, loading, error } = useAppSelector((state) => state.products);
   const [quantity, setQuantity] = useState(1);
+  const { isOpen: isLoginModalOpen, openModal: openLoginModal, closeModal: closeLoginModal } = useLoginModal();
   
-  // Check if user is admin
-  const isAdmin = session?.user?.role === 'admin';
+  // Check if user is admin and authentication status
+  const isAuthenticated = session?.user;
+  const isAdmin = isAuthenticated && session?.user?.role === 'admin';
+  const isRegularUser = isAuthenticated && !isAdmin;
 
   // Calculate total price
   const totalPrice = product ? product.price * quantity : 0;
@@ -34,7 +39,7 @@ export default function ProductDetailPage() {
 
   // Handle buy button click
   const handleBuyClick = () => {
-    if (!product) return;
+    if (!product || !isRegularUser) return;
     
     const cartItem = {
       productId: product.id,
@@ -56,6 +61,11 @@ export default function ProductDetailPage() {
     
     // Reset quantity to 1
     setQuantity(1);
+  };
+
+  const handleLoginSuccess = () => {
+    // Login modal will close automatically
+    // Session will update automatically via NextAuth
   };
 
   useEffect(() => {
@@ -141,34 +151,36 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Quantity Controls */}
-          <div className='flex items-center gap-4'>
-            <span className='text-lg font-medium text-gray-700'>Quantity:</span>
-            <div className='flex items-center gap-3'>
-              <button
-                onClick={() => handleQuantityChange(-1)}
-                className='w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors'
-                disabled={quantity <= 1}
-              >
-                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M20 12H4' />
-                </svg>
-              </button>
-              
-              <span className='text-2xl font-bold text-gray-800 min-w-[3rem] text-center'>
-                {quantity}
-              </span>
-              
-              <button
-                onClick={() => handleQuantityChange(1)}
-                className='w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-colors'
-              >
-                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6v6m0 0v6m0-6h6m-6 0H6' />
-                </svg>
-              </button>
+          {/* Quantity Controls - Only show for regular users */}
+          {isRegularUser && (
+            <div className='flex items-center gap-4'>
+              <span className='text-lg font-medium text-gray-700'>Quantity:</span>
+              <div className='flex items-center gap-3'>
+                <button
+                  onClick={() => handleQuantityChange(-1)}
+                  className='w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors'
+                  disabled={quantity <= 1}
+                >
+                  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M20 12H4' />
+                  </svg>
+                </button>
+                
+                <span className='text-2xl font-bold text-gray-800 min-w-[3rem] text-center'>
+                  {quantity}
+                </span>
+                
+                <button
+                  onClick={() => handleQuantityChange(1)}
+                  className='w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-colors'
+                >
+                  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6v6m0 0v6m0-6h6m-6 0H6' />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className='flex gap-4'>
             {isAdmin && (
@@ -181,24 +193,38 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Total Price and Buy Button - Bottom Right */}
-          <div className='absolute bottom-0 right-0 flex flex-col items-end gap-3'>
-            {/* Total Price */}
-            <div className='bg-white bg-opacity-90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg'>
-              <div className='text-sm text-gray-600'>Total</div>
-              <div className='text-xl font-bold text-green-600'>
-                {formatRupiah(totalPrice)}
+          {/* Total Price and Buy Button - Bottom Right - Only show for regular users */}
+          {isRegularUser && (
+            <div className='absolute bottom-0 right-0 flex flex-col items-end gap-3'>
+              {/* Total Price */}
+              <div className='bg-white bg-opacity-90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg'>
+                <div className='text-sm text-gray-600'>Total</div>
+                <div className='text-xl font-bold text-green-600'>
+                  {formatRupiah(totalPrice)}
+                </div>
               </div>
+              
+              {/* Buy Button */}
+              <button
+                onClick={handleBuyClick}
+                className='bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg transition-colors font-semibold text-lg shadow-lg'
+              >
+                Buy Now
+              </button>
             </div>
-            
-            {/* Buy Button */}
-            <button
-              onClick={handleBuyClick}
-              className='bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg transition-colors font-semibold text-lg shadow-lg'
-            >
-              Buy Now
-            </button>
-          </div>
+          )}
+
+          {/* Login Prompt Button - Bottom Right - Only show for unauthenticated users */}
+          {!isAuthenticated && (
+            <div className='absolute bottom-0 right-0'>
+              <button
+                onClick={openLoginModal}
+                className='bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-lg transition-colors font-semibold text-lg shadow-lg border-2 border-red-600'
+              >
+                Please Login to Buy
+              </button>
+            </div>
+          )}
 
           {product.createdAt && (
             <div className='text-sm text-gray-500 pb-16'>
@@ -210,6 +236,13 @@ export default function ProductDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={closeLoginModal}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </div>
   );
 }
