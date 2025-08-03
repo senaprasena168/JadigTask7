@@ -130,7 +130,7 @@ export function Toast({
       top: '4rem',
       left: '50%',
       transform: 'translate(-50%, 0)',
-      zIndex: 50,
+      zIndex: 10000, // Higher than modal overlay (9999)
       transition: 'all 0.5s ease-in-out',
     };
 

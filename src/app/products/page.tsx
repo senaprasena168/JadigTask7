@@ -113,14 +113,14 @@ export default function ProductsPage() {
           <Link
             key={product.id}
             href={`/products/${product.id}`}
-            className='bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 border border-gray-200'
+            className='bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 group'
           >
-            <div className='aspect-square relative bg-gray-100'>
+            <div className='aspect-square relative bg-gray-100 overflow-hidden'>
               <Image
                 src={product.imageUrl || '/nopic.jpg'}
                 alt={product.name}
                 fill
-                className='object-cover'
+                className='object-cover transition-transform duration-300 group-hover:transform group-hover:-translate-x-2 group-hover:-translate-y-2 group-hover:scale-105'
                 sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw'
                 priority={false}
                 placeholder='blur'

@@ -20,10 +20,14 @@ export default function Navbar() {
         redirect: false,
         callbackUrl: '/',
       });
+      // Show logout success toast
+      (window as any).toast?.showSuccess('Logged out successfully!');
       // Use window.location.replace to prevent back button issues
       window.location.replace('/');
     } catch (error) {
       console.error('Logout error:', error);
+      // Show error toast for logout failure
+      (window as any).toast?.showError('Logout failed. Please try again.');
       // Fallback redirect
       window.location.replace('/');
     }
@@ -51,8 +55,11 @@ export default function Navbar() {
       <div className='max-w-6xl mx-auto px-4'>
         <div className='flex justify-between items-center h-16'>
           <div className='flex items-center space-x-3'>
-            {/* Profile picture */}
-            <div className='w-10 h-10 rounded-full overflow-hidden relative hover:ring-2 hover:ring-yellow-400 transition-all duration-200'>
+            {/* Profile picture - now clickable */}
+            <Link
+              href='/'
+              className='w-10 h-10 rounded-full overflow-hidden relative hover:ring-2 hover:ring-yellow-400 transition-all duration-200'
+            >
               <Image
                 src='/profile-cat.png'
                 alt='Profile Cat'
@@ -60,7 +67,7 @@ export default function Navbar() {
                 height={40}
                 className='w-full h-full object-cover hover:scale-110 transition-transform duration-200'
               />
-            </div>
+            </Link>
 
             <Link
               href='/'
@@ -86,7 +93,7 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
-            
+
             {/* Login button for unauthenticated users */}
             {!isAuthenticated && (
               <button
@@ -142,7 +149,7 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      
+
       {/* Login Modal */}
       <LoginModal
         isOpen={isOpen}

@@ -111,7 +111,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
-      showMessage('Please fill in all fields');
+      (window as any).toast?.showError('Please fill in all fields');
       return;
     }
 
@@ -131,21 +131,21 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
       if (response.ok) {
         if (data.requiresOTP) {
-          showMessage(data.message);
+          (window as any).toast?.showInfo(data.message);
           setUserEmail(data.email);
           setShowOTPVerification(true);
           setIsRegistering(false);
           setFormData({ name: '', email: '', password: '' });
         } else {
-          showMessage('Registration successful! You can now log in.');
+          (window as any).toast?.showSuccess('Registration successful! You can now log in.');
           setIsRegistering(false);
           setFormData({ name: '', email: '', password: '' });
         }
       } else {
-        showMessage(data.error || 'Registration failed');
+        (window as any).toast?.showError(data.error || 'Registration failed');
       }
     } catch (error) {
-      showMessage('Registration failed. Please try again.');
+      (window as any).toast?.showError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
-      showMessage('Please enter email and password');
+      (window as any).toast?.showError('Please enter email and password');
       return;
     }
 
@@ -166,17 +166,18 @@ const LoginModal: React.FC<LoginModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          password: formData.password
-        })
+          password: formData.password,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        showMessage('Login successful!');
-        
-        // Wait a moment for session to be established
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Show success toast instead of local message
+        (window as any).toast?.showSuccess('Login successful!');
+
+        // Wait longer for toast to expand and be visible before redirecting
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
         // Redirect based on user role
         const redirectUrl = data.user.role === 'admin' ? '/admin' : '/products';
@@ -188,10 +189,10 @@ const LoginModal: React.FC<LoginModalProps> = ({
           onLoginSuccess();
         }
       } else {
-        showMessage(data.error || 'Login failed');
+        (window as any).toast?.showError(data.error || 'Login failed');
       }
     } catch (error) {
-      showMessage('Login failed. Please try again.');
+      (window as any).toast?.showError('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -205,7 +206,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
         callbackUrl: window.location.origin + '/products', // Default redirect after OAuth
       });
     } catch (error) {
-      showMessage('Google sign-in failed. Please try again.');
+      (window as any).toast?.showError('Google sign-in failed. Please try again.');
       setLoading(false);
     }
   };
@@ -213,7 +214,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otpCode || otpCode.length !== 6) {
-      showMessage('Please enter a valid 6-digit OTP code');
+      (window as any).toast?.showError('Please enter a valid 6-digit OTP code');
       return;
     }
 
@@ -231,16 +232,16 @@ const LoginModal: React.FC<LoginModalProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        showMessage(data.message);
+        (window as any).toast?.showSuccess(data.message);
         setShowOTPVerification(false);
         setOtpCode('');
         setUserEmail('');
         // User can now login
       } else {
-        showMessage(data.error || 'OTP verification failed');
+        (window as any).toast?.showError(data.error || 'OTP verification failed');
       }
     } catch (error) {
-      showMessage('OTP verification failed. Please try again.');
+      (window as any).toast?.showError('OTP verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -248,7 +249,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleResendOTP = async () => {
     if (!userEmail) {
-      showMessage('Email not found. Please register again.');
+      (window as any).toast?.showError('Email not found. Please register again.');
       return;
     }
 
@@ -263,12 +264,12 @@ const LoginModal: React.FC<LoginModalProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        showMessage(data.message);
+        (window as any).toast?.showSuccess(data.message);
       } else {
-        showMessage(data.error || 'Failed to resend OTP');
+        (window as any).toast?.showError(data.error || 'Failed to resend OTP');
       }
     } catch (error) {
-      showMessage('Failed to resend OTP. Please try again.');
+      (window as any).toast?.showError('Failed to resend OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -300,13 +301,15 @@ const LoginModal: React.FC<LoginModalProps> = ({
           onHoverChange={setIsExpanded}
         >
           <div style={{ color: 'white', padding: '20px', width: '100%' }}>
-            <h2 style={{ 
-              textAlign: 'center', 
-              marginBottom: isExpanded ? '20px' : '0',
-              fontSize: '1.5em',
-              fontWeight: '600',
-              letterSpacing: '2px'
-            }}>
+            <h2
+              style={{
+                textAlign: 'center',
+                marginBottom: isExpanded ? '20px' : '0',
+                fontSize: '1.5em',
+                fontWeight: '600',
+                letterSpacing: '2px',
+              }}
+            >
               {showOTPVerification
                 ? 'VERIFY OTP'
                 : isRegistering
@@ -315,12 +318,14 @@ const LoginModal: React.FC<LoginModalProps> = ({
             </h2>
 
             {isExpanded && (
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '15px',
-                animation: 'fadeIn 0.5s ease-in-out'
-              }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '15px',
+                  animation: 'fadeIn 0.5s ease-in-out',
+                }}
+              >
                 {showOTPVerification ? (
                   /* OTP Verification Form */
                   <form onSubmit={handleVerifyOTP}>
@@ -601,9 +606,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
         </SpinLightContainer>
 
         <div
-          className={`${styles.message} ${
-            showMessageState ? styles.show : ''
-          }`}
+          className={`${styles.message} ${showMessageState ? styles.show : ''}`}
         >
           {message}
         </div>
