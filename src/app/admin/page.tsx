@@ -6,6 +6,7 @@ import { fetchProducts } from '@/lib/features/products/productsSlice';
 import { validateProduct } from '@/lib/validations';
 import { formatRupiah } from '@/lib/currency';
 import Image from 'next/image';
+import Link from 'next/link';
 import clsx from 'clsx';
 import AdminProtection from '@/components/AdminProtection';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
@@ -373,20 +374,28 @@ function AdminPageContent() {
                   <tr key={product.id}>
                     <td className='px-6 py-4 whitespace-nowrap'>
                       <div className='flex items-center space-x-3'>
-                        <div className='w-12 h-12 bg-gray-200 rounded-md overflow-hidden flex-shrink-0'>
+                        <Link
+                          href={`/products/${product.id}`}
+                          className='w-12 h-12 bg-gray-200 rounded-md overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-blue-500 transition-all duration-200'
+                        >
                           <Image
                             src={product.imageUrl || '/nopic.jpg'}
                             alt={product.name}
                             width={48}
                             height={48}
-                            className='w-full h-full object-cover'
+                            className='w-full h-full object-cover hover:scale-105 transition-transform duration-200'
                             priority={false}
                             placeholder="blur"
                             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                           />
-                        </div>
+                        </Link>
                         <div>
-                          <h3 className='font-medium text-gray-900'>{product.name}</h3>
+                          <Link
+                            href={`/products/${product.id}`}
+                            className='font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200'
+                          >
+                            {product.name}
+                          </Link>
                         </div>
                       </div>
                     </td>
