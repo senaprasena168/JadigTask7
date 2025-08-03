@@ -406,12 +406,20 @@ function AdminPageContent() {
                       {product.description || 'No description'}
                     </td>
                     <td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id, product.name)}
-                        className='text-red-600 hover:text-red-900 transition-colors'
-                      >
-                        Delete
-                      </button>
+                      <div className='flex items-center space-x-4'>
+                        <Link
+                          href={`/admin/edit/${product.id}`}
+                          className='bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded border border-blue-500 hover:border-blue-600 transition-colors min-w-[60px] text-center'
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id, product.name)}
+                          className='bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded border border-red-500 hover:border-red-600 transition-colors min-w-[60px]'
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
