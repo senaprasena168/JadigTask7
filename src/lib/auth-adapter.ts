@@ -111,7 +111,7 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
           token_type: account.token_type,
           scope: account.scope,
           id_token: account.id_token,
-          session_state: account.session_state,
+          session_state: account.session_state ? String(account.session_state) : null,
         },
       })
     },
